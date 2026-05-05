@@ -1,0 +1,13 @@
+{
+  "name": "@matcode/cli",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "bun src/index.tsx",
+    "start": "bun src/index.tsx"
+  },
+  "dependencies": {
+    "@opentui/core": "latest",
+    "@opentui/react": "latest",
+    "react": "latest"
+  }
+}

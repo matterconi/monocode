@@ -1,0 +1,11 @@
+{
+  "name": "@matcode/server",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts"
+  },
+  "dependencies": {
+    "hono": "latest"
+  }
+}
