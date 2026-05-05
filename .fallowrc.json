@@ -2,13 +2,13 @@
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
   "workspaces": {
     "packages": [
-      "server",
-      "cli"
+      "apps/server",
+      "apps/cli"
     ]
   },
   "entry": [
-    "server/src/index.ts",
-    "cli/src/index.tsx"
+    "apps/server/src/index.ts",
+    "apps/cli/src/index.tsx"
   ],
   "rules": {}
 }

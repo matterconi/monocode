@@ -1,10 +1,10 @@
 {
   "name": "matcode",
   "private": true,
-  "workspaces": ["server", "cli"],
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "server": "bun run --filter @matcode/server dev",
-    "cli": "bun run --cwd cli dev",
+    "cli": "bun run --cwd apps/cli dev",
     "check": "fallow dead-code && fallow dupes"
   },
   "devDependencies": {
