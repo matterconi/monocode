@@ -17,19 +17,34 @@ Matcode/
 ├── bun.lock
 ├── AGENTS.md
 ├── context/
-├── server/               # @matcode/server
+├── apps/server/          # @matcode/server
 │   ├── package.json
-│   └── src/index.ts
-└── cli/                  # @matcode/cli
+│   └── src/
+│       ├── app.ts        # Hono app, chained routes, AppType
+│       ├── rpc.ts        # type-only RPC contract export
+│       └── index.ts      # Bun.serve entry
+└── apps/cli/             # @matcode/cli
     ├── package.json
     ├── tsconfig.json
-    └── src/index.tsx
+    └── src/
+        ├── index.tsx
+        ├── router.tsx        # createMemoryRouter, all routes registered here
+        ├── routes.ts         # ROUTES array (path, key, label)
+        ├── root-layout.tsx
+        ├── screens/          # one file per route screen
+        │   ├── home-screen.tsx
+        │   ├── about-screen.tsx
+        │   ├── counter-screen.tsx
+        │   ├── llm-screen.tsx    # useCompletion → POST /completion
+        │   └── not-found-screen.tsx
+        └── lib/
+            └── client.ts     # typed Hono RPC client (hc<AppType>)
 ```
 
 ## System Boundaries
 
-- `server/` — HTTP layer only. No business logic yet.
-- `cli/` — Terminal UI only. No API calls yet.
+- `apps/server/` — HTTP layer only. No business logic yet.
+- `apps/cli/` — Terminal UI plus typed HTTP client setup. No product workflow API calls yet.
 
 ## Invariants
 
@@ -37,3 +52,7 @@ Matcode/
 2. CLI must call `renderer.destroy()` before process exit to restore terminal state.
 3. Server port is configurable via `PORT` env var, defaults to 3001.
 4. Workspace packages are named `@matcode/<name>`, not the folder name — filters use the package name.
+5. `@matcode/server/rpc` is the type-only RPC contract import path for clients that need `AppType` without a runtime server dependency.
+6. Env vars obbligatorie vanno controllati in `index.ts` con `process.exit(1)` — non in `app.ts`.
+7. In `ai@6.0.175` il metodo è `toUIMessageStreamResponse()`, non `toDataStreamResponse()` (rinominato).
+8. Validazione Hono: usare `zValidator("json", schema, hook)` — il hook esplicito `!result.success` è obbligatorio; accedere al body con `c.req.valid("json")`, mai con `c.req.json()`.

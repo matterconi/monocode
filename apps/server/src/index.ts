@@ -1,20 +1,9 @@
-import { Hono } from "hono"
-import { logger } from "hono/logger"
+import { app } from "./app"
 
-const app = new Hono()
-
-app.use(logger())
-
-app.get("/", (c) => c.json({ message: "Matcode server is running" }))
-
-app.get("/health", (c) => c.json({ status: "ok" }))
-
-app.notFound((c) => c.json({ message: "Not Found" }, 404))
-
-app.onError((err, c) => {
-  console.error(err)
-  return c.json({ message: "Internal Server Error" }, 500)
-})
+if (!process.env.DEEPSEEK_API_KEY) {
+  console.error("Missing DEEPSEEK_API_KEY")
+  process.exit(1)
+}
 
 const port = Number(process.env.PORT) || 3001
 

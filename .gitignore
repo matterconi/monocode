@@ -1,2 +1,4 @@
 .fallow/
 node_modules/
+.env.local
+.firecrawl/

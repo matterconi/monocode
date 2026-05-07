@@ -16,9 +16,19 @@
 ## Hono
 
 - Register middleware with `app.use()` before routes
+- Keep the Hono app in `apps/server/src/app.ts` and export `type AppType = typeof app` from the chained route value
+- Re-export RPC client contracts from `@matcode/server/rpc`; CLI code should import `AppType` from that subpath with `import type`
 - Always define `notFound` and `onError` handlers
 - Do not `export default app` — use `Bun.serve({ fetch: app.fetch })` explicitly
 - Port via `Number(process.env.PORT) || 3001`
+- Validazione body: `zValidator("json", schema, (result, c) => { if (!result.success) return c.json({ error: result.error.flatten() }, 400) })` — poi `c.req.valid("json")` nel handler
+- Check env obbligatori in `index.ts` prima di `Bun.serve()`, con `process.exit(1)`
+
+## AI SDK (ai@6.0.175)
+
+- Streaming server-side: `streamText({ model, prompt }).toUIMessageStreamResponse()` — non `toDataStreamResponse()` (non esiste in v6)
+- Plain text stream: `toTextStreamResponse()` — compatibile con lettura manuale `res.body.getReader()`
+- Client-side streaming in OpenTUI: `useCompletion` da `@ai-sdk/react` — compatibile con Bun (nessuna browser API), si aspetta endpoint POST con `{ prompt: string }` nel body
 
 ## OpenTUI React
 

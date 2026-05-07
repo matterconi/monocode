@@ -2,6 +2,32 @@
 
 ---
 
+## [FIXED] React declarations missing in CLI TSX files
+
+**Package:** `@matcode/cli`
+**File:** `apps/cli/package.json`
+
+**Symptom:** TypeScript/IDE mostrava `Could not find a declaration file for module 'react'` su file TSX come `apps/cli/src/screens/about-screen.tsx`.
+
+**Cause:** `react` fornisce il runtime, ma le dichiarazioni TypeScript arrivano dal package separato `@types/react`.
+
+**Fix:** Aggiunto `@types/react` ai `devDependencies` della CLI e aggiornato `bun.lock`.
+
+---
+
+## [FIXED] Home textarea newline keybind does not work
+
+**Package:** `@matcode/cli`
+**File:** `apps/cli/src/components/home-textarea.tsx`
+
+**Symptom:** Il keybind doveva separare submit e newline, ma il newline non funzionava; su macOS molti terminali inviano la stessa sequenza per `Enter` e `Shift+Enter`.
+
+**Cause:** La soluzione basata su `Shift+Enter` non è affidabile quando il terminale non espone il modifier a OpenTUI.
+
+**Fix:** La textarea ora usa `onKeyDown`: `Enter` senza modifier fa submit; `Ctrl+J`, `linefeed` e gli Enter con modifier chiamano `preventDefault()` e inseriscono `\n` via `TextareaRenderable.insertText()`.
+
+---
+
 ## [FIXED] CLI exits immediately instead of staying alive
 
 **Package:** `@matcode/cli`
@@ -37,3 +63,20 @@
 **Impact:** Cosmetic only.
 
 **Fix needed:** Passare da `bun --watch` a `bun --hot`, oppure accettare l'output cosmetic.
+
+---
+
+## [OPEN] Fallow warns about broken tsconfig chain
+
+**Package:** `@matcode/server`, `@matcode/cli`
+**File:** `apps/server/tsconfig.json`, `apps/cli/tsconfig.json`
+
+**Symptom:** `bun run check` passa, ma stampa `Broken tsconfig chain: Tsconfig not found .../apps/tsconfig.json`.
+
+**Additional symptom:** `bunx tsc --noEmit -p apps/server/tsconfig.json` fallisce perché non trova `apps/tsconfig.json` e quindi non vede i tipi Bun (`process`, `Bun`).
+
+**Cause:** I package tsconfig in `apps/*` cercano una chain intermedia `apps/tsconfig.json` mancante.
+
+**Impact:** Il check cade in resolver-less resolution per i file coinvolti; import relativi e bare funzionano, ma eventuali path alias potrebbero non essere risolti correttamente.
+
+**Fix needed:** Sistemare la chain tsconfig del workspace, probabilmente aggiungendo o correggendo un tsconfig intermedio per `apps/`.

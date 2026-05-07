@@ -6,8 +6,15 @@
     "start": "bun src/index.tsx"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.177",
     "@opentui/core": "latest",
     "@opentui/react": "latest",
-    "react": "latest"
+    "hono": "latest",
+    "react": "latest",
+    "react-router": "^7.15.0"
+  },
+  "devDependencies": {
+    "@matcode/server": "workspace:*",
+    "@types/react": "latest"
   }
 }
