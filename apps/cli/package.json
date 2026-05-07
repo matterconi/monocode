@@ -11,7 +11,8 @@
     "@opentui/react": "latest",
     "hono": "latest",
     "react": "latest",
-    "react-router": "^7.15.0"
+    "react-router": "^7.15.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@matcode/server": "workspace:*",
