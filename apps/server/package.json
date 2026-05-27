@@ -1,5 +1,5 @@
 {
-  "name": "@matcode/server",
+  "name": "@monocode/server",
   "version": "0.0.1",
   "main": "src/index.ts",
   "exports": {
@@ -11,6 +11,8 @@
     "start": "bun src/index.ts"
   },
   "dependencies": {
+    "@monocode/ai": "workspace:*",
+    "@monocode/db": "workspace:*",
     "@ai-sdk/deepseek": "^2.0.33",
     "@hono/zod-validator": "^0.7.6",
     "ai": "^6.0.175",

@@ -1,26 +1,32 @@
-import { useEffect } from "react"
-import { useLocation } from "react-router"
-import { useCompletion } from "@ai-sdk/react"
+import { useLocation, useParams } from "react-router"
 import { z } from "zod"
-import { client } from "../lib/client"
+import { MessageList } from "../components/chat/message-list"
+import { InputHints } from "../components/input/input-meta"
+import { InputSurface } from "../components/input/input-surface"
+import { useSessionChat } from "../hooks/use-session-chat"
 
-const ChatState = z.object({ prompt: z.string() })
+const ChatState = z.object({ prompt: z.string().optional() })
 
 export function ChatScreen() {
+  const { sessionId } = useParams<{ sessionId: string }>()
   const { state } = useLocation()
-  const { prompt } = ChatState.parse(state)
-
-  const { completion, complete, isLoading } = useCompletion({
-    api: client.completion.$url().toString(),
+  const { prompt } = ChatState.parse(state ?? {})
+  const { messages, messageModes, isStreaming, disabled, submitMessage } = useSessionChat({
+    sessionId: sessionId!,
+    initialPrompt: prompt,
   })
 
-  useEffect(() => {
-    complete(prompt)
-  }, [])
-
   return (
-    <box flexDirection="column" flexGrow={1} padding={2}>
-      <text>{isLoading && !completion ? "..." : completion}</text>
+    <box flexDirection="column" flexGrow={1}>
+      <MessageList messages={messages} messageModes={messageModes} isStreaming={isStreaming} />
+      <InputSurface
+        clearOnSubmit
+        disabled={disabled}
+        onSubmit={submitMessage}
+        placeholder={disabled ? "Waiting..." : "Message Monocode..."}
+        variant="chat"
+      />
+      <InputHints />
     </box>
   )
 }

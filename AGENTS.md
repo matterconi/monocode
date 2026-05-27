@@ -1,4 +1,4 @@
-# Matcode — Agent Instructions
+# Monocode — Agent Instructions
 
 Before doing any work, read the following context files in order:
 

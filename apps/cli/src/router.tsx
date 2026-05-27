@@ -1,7 +1,12 @@
-import { createMemoryRouter } from "react-router"
+import { createMemoryRouter, useParams } from "react-router"
 import { RootLayout } from "./root-layout"
 import { HomeScreen } from "./screens/home-screen"
 import { ChatScreen } from "./screens/chat-screen"
+
+function ChatRoute() {
+  const { sessionId } = useParams<{ sessionId: string }>()
+  return <ChatScreen key={sessionId} />
+}
 
 export const router = createMemoryRouter([
   {
@@ -9,7 +14,7 @@ export const router = createMemoryRouter([
     element: <RootLayout />,
     children: [
       { index: true, element: <HomeScreen /> },
-      { path: "chat", element: <ChatScreen /> },
+      { path: "sessions/:sessionId", element: <ChatRoute /> },
     ],
   },
 ])

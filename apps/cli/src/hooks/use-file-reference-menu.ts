@@ -4,10 +4,10 @@ import { listFileReferences, type FileReferenceItem } from "../lib/file-referenc
 import { useSelectableList } from "./use-selectable-list"
 
 interface UseFileReferenceMenuOptions {
-  cursorOffset: number
-  onConfirm: (item: FileReferenceItem, triggerStart: number, cursorOffset: number) => void
+  inputText: string
+  onConfirm: (item: FileReferenceItem, triggerStart: number, textCursorOffset: number) => void
   scrollRef?: RefObject<ScrollBoxRenderable | null>
-  value: string
+  textCursorOffset: number
 }
 
 interface FileReferenceTrigger {
@@ -17,8 +17,8 @@ interface FileReferenceTrigger {
 
 const visibleFileReferenceLimit = 5
 
-function getFileReferenceTrigger(value: string, cursorOffset: number): FileReferenceTrigger | null {
-  const beforeCursor = value.slice(0, cursorOffset)
+function getFileReferenceTrigger(inputText: string, textCursorOffset: number): FileReferenceTrigger | null {
+  const beforeCursor = inputText.slice(0, textCursorOffset)
   const atIndex = beforeCursor.lastIndexOf("@")
 
   if (atIndex === -1) return null
@@ -30,10 +30,10 @@ function getFileReferenceTrigger(value: string, cursorOffset: number): FileRefer
   return { query, start: atIndex }
 }
 
-export function useFileReferenceMenu({ cursorOffset, onConfirm, scrollRef, value }: UseFileReferenceMenuOptions) {
+export function useFileReferenceMenu({ inputText, onConfirm, scrollRef, textCursorOffset }: UseFileReferenceMenuOptions) {
   const [items, setItems] = useState<FileReferenceItem[]>([])
   const [dismissedToken, setDismissedToken] = useState<string | null>(null)
-  const trigger = getFileReferenceTrigger(value, cursorOffset)
+  const trigger = getFileReferenceTrigger(inputText, textCursorOffset)
   const token = trigger ? `${trigger.start}:${trigger.query}` : ""
 
   useEffect(() => {
@@ -68,9 +68,9 @@ export function useFileReferenceMenu({ cursorOffset, onConfirm, scrollRef, value
       if (!trigger) return
 
       const item = filteredItems[index]
-      if (item) onConfirm(item, trigger.start, cursorOffset)
+      if (item) onConfirm(item, trigger.start, textCursorOffset)
     },
-    [cursorOffset, filteredItems, onConfirm, trigger],
+    [filteredItems, onConfirm, textCursorOffset, trigger],
   )
   const { handleSelectableListKeyDown, selectedIndex, selectIndex } = useSelectableList({
     getItemId,
@@ -87,8 +87,8 @@ export function useFileReferenceMenu({ cursorOffset, onConfirm, scrollRef, value
 
   const confirmSelectedFileReference = useCallback(() => {
     if (!trigger || !selectedItem) return
-    onConfirm(selectedItem, trigger.start, cursorOffset)
-  }, [cursorOffset, onConfirm, selectedItem, trigger])
+    onConfirm(selectedItem, trigger.start, textCursorOffset)
+  }, [onConfirm, selectedItem, textCursorOffset, trigger])
 
   const handleFileReferenceMenuKeyDown = useCallback(
     (event: KeyEvent) => {
@@ -99,15 +99,32 @@ export function useFileReferenceMenu({ cursorOffset, onConfirm, scrollRef, value
     [handleSelectableListKeyDown, isOpen],
   )
 
-  return {
-    dismissFileReferenceMenu,
-    fileReferenceItems: filteredItems,
-    handleFileReferenceMenuKeyDown,
-    hasScrollableOverflow: filteredItems.length > visibleFileReferenceLimit,
-    isOpen,
-    confirmSelectedFileReference,
-    selectIndex,
-    selectedIndex,
-    visibleFileReferenceLimit,
-  }
+  return useMemo(
+    () => ({
+      actions: {
+        confirmSelected: confirmSelectedFileReference,
+        dismiss: dismissFileReferenceMenu,
+        handleKeyDown: handleFileReferenceMenuKeyDown,
+        selectIndex,
+      },
+      layout: {
+        hasScrollableOverflow: filteredItems.length > visibleFileReferenceLimit,
+        visibleItemLimit: visibleFileReferenceLimit,
+      },
+      state: {
+        isOpen,
+        items: filteredItems,
+        selectedIndex,
+      },
+    }),
+    [
+      confirmSelectedFileReference,
+      dismissFileReferenceMenu,
+      filteredItems,
+      handleFileReferenceMenuKeyDown,
+      isOpen,
+      selectIndex,
+      selectedIndex,
+    ],
+  )
 }

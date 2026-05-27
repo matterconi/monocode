@@ -1,0 +1,24 @@
+{
+  "name": "@monocode/db",
+  "version": "0.0.1",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "bunx --bun prisma generate",
+    "push": "bunx --bun prisma db push",
+    "seed": "bun prisma/seed.ts",
+    "title:sessions": "bun scripts/title-sessions.ts",
+    "studio": "bunx --bun prisma studio"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "latest",
+    "@prisma/client": "latest",
+    "dotenv": "latest",
+    "pg": "latest"
+  },
+  "devDependencies": {
+    "@types/pg": "latest",
+    "prisma": "latest"
+  }
+}

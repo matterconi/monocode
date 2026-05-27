@@ -1,21 +1,24 @@
 {
-  "name": "@matcode/cli",
+  "name": "@monocode/cli",
   "version": "0.0.1",
   "scripts": {
     "dev": "bun src/index.tsx",
-    "start": "bun src/index.tsx"
+    "start": "bun src/index.tsx",
+    "test": "bun test src/__tests__"
   },
   "dependencies": {
+    "@monocode/ai": "workspace:*",
     "@ai-sdk/react": "^3.0.177",
     "@opentui/core": "latest",
     "@opentui/react": "latest",
+    "ai": "^6.0.175",
     "hono": "latest",
     "react": "latest",
     "react-router": "^7.15.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@matcode/server": "workspace:*",
+    "@monocode/server": "workspace:*",
     "@types/react": "latest"
   }
 }

@@ -1,0 +1,42 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/client"
+}
+
+enum Role {
+  user
+  assistant
+  system
+}
+
+enum MessageMode {
+  build
+  plan
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  title     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id
+  sessionId String
+  role      Role
+  mode      MessageMode @default(build)
+  model     String
+  parts     Json
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}

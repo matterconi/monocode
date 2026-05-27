@@ -1,8 +1,8 @@
 {
-  "name": "@matcode/shared",
+  "name": "@monocode/shared",
   "version": "0.0.1",
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts"
-  }
+  },
 }

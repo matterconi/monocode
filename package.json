@@ -1,12 +1,17 @@
 {
-  "name": "matcode",
+  "name": "monocode",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "server": "bun run --filter @matcode/server dev",
-    "cli": "bun run --cwd apps/cli dev",
-    "check": "fallow dead-code && fallow dupes"
+    "server": "bun run --filter @monocode/server dev",
+    "cli": "MONOCODE_WORKSPACE_ROOT=\"$PWD\" bun run --cwd apps/cli dev",
+    "check": "fallow dead-code && fallow dupes",
+    "test": "bun run --filter \"*\" test"
   },
+  "trustedDependencies": ["prisma"],
   "devDependencies": {
     "@types/bun": "^1.3.13",
     "fallow": "^2.64.0"

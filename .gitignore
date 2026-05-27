@@ -1,4 +1,7 @@
 .fallow/
 node_modules/
+.env
 .env.local
+.env*.local
 .firecrawl/
+packages/db/generated/

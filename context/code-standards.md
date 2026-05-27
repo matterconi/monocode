@@ -12,12 +12,14 @@
 - Strict mode enabled in all packages
 - No `any` — use explicit types or narrow unions
 - CLI package uses `jsxImportSource: "@opentui/react"` in tsconfig
+- CLI-only shared contracts live in `apps/cli/src/types/`; component props and hook option types stay local when used by one file.
+- Prefer deriving domain types from runtime schemas when a Zod schema exists. Keep runtime schemas outside `types/` and import their derived types through type-only imports or re-exporting type modules.
 
 ## Hono
 
 - Register middleware with `app.use()` before routes
 - Keep the Hono app in `apps/server/src/app.ts` and export `type AppType = typeof app` from the chained route value
-- Re-export RPC client contracts from `@matcode/server/rpc`; CLI code should import `AppType` from that subpath with `import type`
+- Re-export RPC client contracts from `@monocode/server/rpc`; CLI code should import `AppType` from that subpath with `import type`
 - Always define `notFound` and `onError` handlers
 - Do not `export default app` — use `Bun.serve({ fetch: app.fetch })` explicitly
 - Port via `Number(process.env.PORT) || 3001`
@@ -29,6 +31,8 @@
 - Streaming server-side: `streamText({ model, prompt }).toUIMessageStreamResponse()` — non `toDataStreamResponse()` (non esiste in v6)
 - Plain text stream: `toTextStreamResponse()` — compatibile con lettura manuale `res.body.getReader()`
 - Client-side streaming in OpenTUI: `useCompletion` da `@ai-sdk/react` — compatibile con Bun (nessuna browser API), si aspetta endpoint POST con `{ prompt: string }` nel body
+- Coding tool definitions stay explicit: prefer readable `ToolCall` unions, explicit `CodingUITools`, and `switch` dispatch in `executor.ts` over registry-derived generics (`typeof registry`, `keyof typeof registry`) or casts.
+- Message boundary schemas live in `@monocode/ai/messages`: use `chatRequestSchema`, `storedMessagePartsSchema`, and `storedCodingMessagesSchema` instead of inline casts between AI SDK messages, HTTP JSON, and Prisma JSON.
 
 ## OpenTUI React
 
@@ -36,9 +40,12 @@
 - Always call `renderer.destroy()` on process exit for terminal cleanup
 - Use JSX intrinsic elements: `<box>`, `<text>`, `<ascii-font>`, `<input>`
 - Style via the `style` prop or direct props — no hardcoded inline strings
+- CLI colors must come from `useTheme()` / `theme.ts`; do not hardcode hex colors in components
+- Theme is color-only for now — do not add spacing/layout tokens unless explicitly needed
 
 ## File Organization
 
 - `server/src/` — Hono app and route handlers
 - `cli/src/` — React components and entry point
+- `cli/src/types/` — shared CLI type contracts only; no runtime registries or UI implementation
 - `context/` — project context files, always kept up to date
