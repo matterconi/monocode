@@ -1,5 +1,8 @@
 export type CommandName =
   | "/new"
+  | "/login"
+  | "/logout"
+  | "/auth"
   | "/exit"
   | "/sessions"
   | "/help"

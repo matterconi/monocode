@@ -87,7 +87,7 @@
 
 **Package:** `@matcode/cli`, `@matcode/db`, `packages/shared`
 
-**Symptom:** `bun run check` fallisce con Fallow: file non raggiungibili (`apps/cli/src/__tests__/chat-state.test.ts`, `apps/cli/src/__tests__/fixtures/chat-messages.ts`, `apps/cli/src/scripts/test-chat.ts`, `packages/db/prisma.config.ts`, `packages/db/scripts/verify.ts`, `packages/shared/src/index.ts`) e dipendenza `pg` inutilizzata in `packages/db/package.json`.
+**Symptom:** `bun run check` fallisce con Fallow: file non raggiungibili (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, `packages/db/prisma.config.ts`, `packages/db/scripts/verify.ts`, `packages/shared/src/index.ts`), dipendenze workspace segnalate come inutilizzate (`@monocode/ai`, `@monocode/db`, `@monocode/server`) e dipendenza `pg` inutilizzata in `packages/db/package.json`.
 
 **Cause:** Alcuni file/script non sono raggiungibili dagli entry point configurati e `pg` non viene importato direttamente.
 

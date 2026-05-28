@@ -48,4 +48,5 @@
 - `server/src/` — Hono app and route handlers
 - `cli/src/` — React components and entry point
 - `cli/src/types/` — shared CLI type contracts only; no runtime registries or UI implementation
+- `cli/src/lib/auth/` — CLI-only OAuth helpers; keep protocol snake_case at the boundary and normalize stored auth session fields to camelCase
 - `context/` — project context files, always kept up to date

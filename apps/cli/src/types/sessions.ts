@@ -4,6 +4,7 @@ export type SessionsStatus = "loading" | "ready" | "error"
 
 export interface SessionsContextValue {
   cacheSession: (session: Session) => void
+  clearSessions: () => void
   error: string | null
   refreshSessions: () => Promise<void>
   sessions: Session[]

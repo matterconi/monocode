@@ -23,6 +23,8 @@ Monocode/
 │       ├── app.ts        # Hono app composition — mounts all route groups
 │       ├── rpc.ts        # type-only RPC contract export
 │       ├── index.ts      # Bun.serve entry
+│       ├── middleware/   # reusable Hono middleware, not mounted by default
+│       │   └── clerk-auth.ts # Clerk session auth middleware
 │       └── routes/       # one file per route group, flat
 │           └── chat.ts   # POST /chat — streaming AI chat
 └── apps/cli/             # @monocode/cli
@@ -38,19 +40,23 @@ Monocode/
         │   └── chat-screen.tsx   # route /sessions/:sessionId, useChat → POST /sessions/:sessionId/messages
         ├── providers/
         │   ├── dialog-provider.tsx       # generic dialog host/state
+        │   ├── auth/                     # in-memory CLI auth session and browser PKCE login action
         │   ├── interaction-provider.tsx  # keyboard/layer/input/menu orchestration
         │   ├── mode-provider.tsx         # build/plan mode state
         │   ├── sessions-provider.tsx     # in-memory sessions cache
+        │   ├── toast-provider.tsx        # non-interactive toast notifications
         │   └── theme-provider.tsx        # CLI theme state
         ├── commands/
         │   └── commands.ts # slash command registry metadata
         ├── hooks/
         │   └── use-command-menu.ts # command menu selection/window keyboard logic
         ├── types/              # CLI-only shared type contracts
+        │   ├── auth.ts
         │   ├── commands.ts
         │   ├── dialogs.ts
         │   ├── interaction.ts
         │   ├── sessions.ts
+        │   ├── toasts.ts
         │   └── theme.ts
         ├── components/
         │   ├── chat/              # chat history/panel and AI SDK part renderers
@@ -70,14 +76,17 @@ Monocode/
         │   │   ├── floating-list-menu.tsx
         │   │   ├── command-menu.tsx
         │   │   └── file-reference-menu.tsx
-        │   └── dialogs/           # dialog shell, overlay, search, and modal content
-        │       ├── dialog.tsx
-        │       ├── dialog-overlay.tsx
-        │       ├── dialog-search-input.tsx
-        │       ├── selectable-dialog-list.tsx
-        │       ├── sessions-dialog.tsx
-        │       └── theme-dialog.tsx
+        │   ├── dialogs/           # dialog shell, overlay, search, and modal content
+        │   │   ├── dialog.tsx
+        │   │   ├── dialog-overlay.tsx
+        │   │   ├── dialog-search-input.tsx
+        │   │   ├── selectable-dialog-list.tsx
+        │   │   ├── sessions-dialog.tsx
+        │   │   └── theme-dialog.tsx
+        │   └── toasts/            # absolute top-right toast viewport and card
+        │       └── toast-viewport.tsx
         └── lib/
+            ├── auth/              # CLI-only OAuth PKCE helpers
             └── client.ts          # typed Hono RPC client (hc<AppType>)
 ```
 
@@ -100,6 +109,8 @@ Tool architecture intentionally avoids a central generated registry. Adding a to
 
 Chat request and message persistence validation live in `@monocode/ai`: routes import `chatRequestSchema` instead of defining request schemas inline, use `storedMessagePartsSchema` before writing UI parts into Prisma JSON, and the CLI uses `storedCodingMessagesSchema` when hydrating DB messages. Modes use `modeSchema` from `@monocode/ai` as the shared runtime/type source of truth, so validated `mode` values can flow into `modes[mode]` and `getToolsForMode(mode)` without casts. `Message.mode` is a first-class DB column, not metadata, because it controls message semantics and stable UI rendering.
 
+`Session.userId` stores the Clerk user id for the authenticated user that owns the session. Session list/create and message hydration/streaming are scoped by `c.var.auth.userId`; missing or non-user auth returns `401`, and session ids that do not belong to the current user return `404`. API responses keep `userId` server-side and only expose session fields needed by the CLI.
+
 ## CLI Types
 
 - CLI-only shared type contracts live under `apps/cli/src/types/`. This includes command metadata contracts, dialog context options, interaction handles/domains, session cache contracts, and theme shape contracts.
@@ -110,7 +121,8 @@ Chat request and message persistence validation live in `@monocode/ai`: routes i
 ## CLI Command Menu
 
 - `apps/cli/src/commands/commands.ts` is the static slash command registry. Runtime effects do not live in the registry. Commands may declare input activation metadata through `inputActivationBehavior` (`clear`, `blurAndClear`, `preserve`); `CommandMenu` asks the interaction layer to prepare the input before executing the runtime effect.
-- Slash command runtime is owned by `CommandRuntimeProvider`, not `InteractionProvider`. It exposes `commands` and `executeCommand()` through `useCommandRuntime()`; `/new` navigates to `/`, `/exit` destroys the renderer, `/sessions` refreshes cached sessions and opens `SessionsDialog`, and `/theme` opens `ThemeDialog` through the generic dialog host.
+- Slash command runtime is owned by `CommandRuntimeProvider`, not `InteractionProvider`. It exposes `commands` and `executeCommand()` through `useCommandRuntime()`; `/new` navigates to `/`, `/exit` destroys the renderer, `/sessions` refreshes cached sessions and opens `SessionsDialog`, `/theme` opens `ThemeDialog` through the generic dialog host, `/login` starts browser PKCE auth with toast feedback, and `/auth` shows safe in-memory auth diagnostics including expired/expiring state.
+- `/login` is CLI-only browser authentication. `CommandRuntimeProvider` calls `useAuth().actions.login()`, shows toast feedback, and does not change routes. `AuthProvider` stores the normalized `AuthSession` in memory only and automatically refreshes access tokens with the in-memory refresh token before expiry. CLI session creation/listing, message hydration, and chat streaming send `Authorization: Bearer <accessToken>` through `getAuthHeaders()`.
 - `SessionsProvider` is mounted above `InteractionProvider` so dialogs rendered through `DialogOverlay` can read the same cache. It prefetches `GET /sessions` when the CLI starts, keeps an in-memory cache plus `loading`/`ready`/`error` status, exposes `refreshSessions()` for stale-while-revalidate updates, and exposes `cacheSession()` for in-memory upsert of sessions returned by creation flows.
 - `POST /sessions` accepts an optional `title` and returns the full created session. Callers cache the returned session immediately through `SessionsProvider.cacheSession()` so new sessions appear in the modal cache without an extra fetch.
 - `/new` navigates back to `/`. There is no draft route/state; the CLI has two route-level states: home (`/`) and chat (`/sessions/:sessionId`). Home first submit creates and caches a session, then navigates to `/sessions/:sessionId` with the prompt as `initialPrompt`.
@@ -154,6 +166,34 @@ Chat request and message persistence validation live in `@monocode/ai`: routes i
 - Modal/input cleanup for command activation is owned by `InteractionProvider` through `commandMenu.actions.prepareInputForCommand(command)`, using command `inputActivationBehavior` metadata. `CommandMenu` confirms the selected command, asks the interaction layer to prepare the surface, then delegates the application effect to `CommandRuntimeProvider`. `DialogProvider` still disables cursor blinking before setting dialog state, but command runtime does not know about textarea cleanup.
 - Trade-off: `InteractionProvider` accepts narrow registered capabilities instead of owning OpenTUI renderable refs directly. This keeps `Input`/menus as render/ref owners while centralizing layer keyboard policy.
 
+## CLI Toasts
+
+- Toast state is owned by `ToastProvider` as a non-interactive notification stack. It exposes `show()`, variant helpers (`success`, `error`, `warning`, `info`), `dismiss(id)`, and `clear()` through `useToast()`.
+- `ToastProvider` renders `ToastViewport` after its children, similar to the dialog host pattern, but toasts do not create an interaction layer and do not block input, menus, dialogs, `Esc`, `Ctrl+C`, or `Tab`.
+- The viewport is absolute top-right (`top: 2`, `right: 2`) and renders at most three visible toasts. When a fourth toast is added, the oldest visible toast is dropped and its timer is cleared.
+- Toast cards use theme colors only: background panel from `theme.colors.backgroundPanel`, text from `theme.colors.text`/`textSoft`, and variant border colors from `success`, `danger`, `warning`, or `accent`.
+- Runtime command effects may use toasts for lightweight feedback. Placeholder slash commands currently show an info toast instead of opening new screens or dialogs.
+
+## CLI Auth
+
+- CLI login/session state lives under `apps/cli/`. The server uses the reusable Clerk Hono middleware exported at `@monocode/server/middleware/clerk-auth` as a global gate before protected routes.
+- `AuthProvider` owns auth state in React state inside `apps/cli/src/providers/auth/auth-provider.tsx`: `loading`, `unauthenticated`, `authenticating`, `authenticated`, or `error`, plus `AuthSession | null` and the latest error message.
+- Auth sessions persist locally in `~/.config/monocode/auth-session.json` (or `$XDG_CONFIG_HOME/monocode/auth-session.json`) through `apps/cli/src/lib/auth/session-storage.ts`. The directory is created with `0700`, the file is written atomically through a temp file and chmodded to `0600`, and JSON is validated before use.
+- CLI startup hydrates auth from the local session file. If the stored access token is already inside the refresh skew window, startup refreshes it before marking auth as `authenticated`; refresh failure deletes the file and asks the user to run `/login` again.
+- `/login` starts Authorization Code + PKCE S256 for an OAuth public client. There is no client secret in the CLI.
+- The authorize request includes `prompt=login` so Clerk asks for authentication again instead of silently reusing the current browser session.
+- Required env vars for this CLI login phase are `CLERK_FRONTEND_API` and `CLERK_OAUTH_CLIENT_ID`. `.env.example` keeps single-underscore Clerk names and does not require `CLERK_OAUTH_CLIENT_SECRET`.
+- OIDC discovery uses `CLERK_FRONTEND_API` as the issuer and `oauth4webapi.discoveryRequest()` / `processDiscoveryResponse()` before building the authorize URL.
+- The browser is opened with `Bun.spawn()` directly: `open` on macOS, `cmd /c start ""` on Windows, and `xdg-open` on Linux.
+- The callback server uses `Bun.serve()` on fixed loopback redirect URI `http://127.0.0.1:8976/oauth/callback`, which must be registered in Clerk. It is always stopped after success or failure.
+- Protocol response fields remain snake_case at the OAuth boundary. The stored session is normalized to camelCase: `accessToken`, `refreshToken`, `idToken`, `expiresAt`, `tokenType`, `scope`, and camelCase `userInfo`.
+- Refresh token flow is automatic and CLI-only. `AuthProvider` schedules refresh at `expiresAt - 60_000`, refreshes immediately if the token is already inside that skew window, deduplicates concurrent refreshes, persists rotated tokens locally, and clears both memory and disk state with a toast if refresh data is missing or the refresh grant fails. Refresh uses `oauth4webapi.refreshTokenGrantRequest()` / `processRefreshTokenResponse()` with `oauth.None()` for the public client and does not use a client secret.
+- `AuthProvider.actions.refreshAccessToken()` returns the next `AuthSession`. It updates `accessToken`, replaces `refreshToken` and `idToken` only when the provider returns new values, recalculates `expiresAt`, updates `tokenType`/`scope` sensibly, and keeps existing `userInfo`.
+- `/logout` is CLI-only and local-first. `AuthProvider.actions.logout()` deduplicates concurrent logout calls, discovers Clerk OAuth metadata from `CLERK_FRONTEND_API`, uses the discovered `revocation_endpoint`, and revokes only the OAuth refresh token with `token_type_hint=refresh_token` and `oauth.None()` for the public PKCE client. It does not revoke the access token; JWT access tokens remain valid until natural expiry for this phase. The in-memory session and local session file are always cleared at the end, even if remote refresh-token revocation fails. The command runtime then clears the sessions cache and navigates back to `/`.
+- `getAuthHeaders(auth)` builds authenticated request headers from the in-memory session and calls `auth.actions.refreshAccessToken()` first when the access token is inside the refresh skew window. Hono RPC calls pass those headers through client request options; `DefaultChatTransport` uses a dynamic `headers` resolver backed by the current auth ref.
+- `/auth` reads `useAuth().state` and shows a toast with status, user identity, expiry, expired/expiring state, scope, and token presence only. It must not print full access, refresh, or ID tokens.
+- Deferred auth work: CLI private access gating.
+
 ## Invariants
 
 1. No `export default app` in the server entry — causes Bun to start a duplicate HMR dev server.
@@ -167,3 +207,4 @@ Chat request and message persistence validation live in `@monocode/ai`: routes i
 9. Coding tools are executed client-side only. The server exposes tool definitions to the model, streams tool calls to the CLI, and the CLI returns outputs with `addToolOutput()`.
 10. Slash command runtime behavior belongs in `CommandRuntimeProvider`; interaction policy for command menu/input keys belongs in `InteractionProvider`. `CommandMenu` bridges them by owning selected command state, applying command input lifecycle, and calling `executeCommand()`.
 11. Dialog state belongs in `DialogProvider`; global layer keyboard behavior belongs in `InteractionProvider`. Dialog shells/content must not import or directly own textarea state.
+12. `Session.userId` is a required Prisma field containing the owning Clerk user id. It is a data-isolation boundary, not metadata, and server routes must scope session access by it.

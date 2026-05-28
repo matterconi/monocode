@@ -2,14 +2,17 @@ import { useState } from "react"
 import { useNavigate } from "react-router"
 import { InputHints } from "../components/input/input-meta"
 import { InputSurface } from "../components/input/input-surface"
+import { getAuthHeaders } from "../lib/auth/request-headers"
 import { client } from "../lib/client"
 import { sessionSchema } from "../lib/sessions"
+import { useAuth } from "../providers/auth"
 import { useSessions } from "../providers/sessions"
 import { useTheme } from "../providers/theme"
 
 export function HomeScreen() {
   const navigate = useNavigate()
   const { theme } = useTheme()
+  const auth = useAuth()
   const [submitting, setSubmitting] = useState(false)
   const { cacheSession } = useSessions()
 
@@ -17,7 +20,7 @@ export function HomeScreen() {
     if (!value.trim() || submitting) return
     setSubmitting(true)
     try {
-      const res = await client.sessions.$post({ json: {} })
+      const res = await client.sessions.$post({ json: {} }, { headers: await getAuthHeaders(auth) })
       const session = sessionSchema.parse(await res.json())
       cacheSession(session)
       navigate(`/sessions/${session.id}`, { state: { prompt: value } })

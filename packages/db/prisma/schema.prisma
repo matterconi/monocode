@@ -20,10 +20,13 @@ enum MessageMode {
 
 model Session {
   id        String    @id @default(cuid())
+  userId    String
   title     String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   messages  Message[]
+
+  @@index([userId, updatedAt])
 }
 
 model Message {

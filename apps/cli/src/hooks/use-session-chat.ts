@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai"
 import { executeTool, storedCodingMessagesSchema, type CodingUIMessage, type ModeName } from "@matcode/ai"
+import { getAuthHeaders } from "../lib/auth/request-headers"
 import { client } from "../lib/client"
+import { useAuth } from "../providers/auth"
 import { useMode } from "../providers/mode"
 
 type UseSessionChatOptions = {
@@ -11,6 +13,10 @@ type UseSessionChatOptions = {
 }
 
 export function useSessionChat({ sessionId, initialPrompt }: UseSessionChatOptions) {
+  const auth = useAuth()
+  const authRef = useRef(auth)
+  authRef.current = auth
+
   const { mode } = useMode()
   const modeRef = useRef(mode)
   modeRef.current = mode
@@ -20,6 +26,7 @@ export function useSessionChat({ sessionId, initialPrompt }: UseSessionChatOptio
   if (!transportRef.current) {
     transportRef.current = new DefaultChatTransport({
       api: client.sessions[":sessionId"].messages.$url({ param: { sessionId } }).toString(),
+      headers: () => getAuthHeaders(authRef.current),
       body: () => ({ mode: modeRef.current }),
     })
   }
@@ -46,7 +53,10 @@ export function useSessionChat({ sessionId, initialPrompt }: UseSessionChatOptio
     let cancelled = false
 
     async function bootstrapSessionChat() {
-      const res = await client.sessions[":sessionId"].messages.$get({ param: { sessionId } })
+      const res = await client.sessions[":sessionId"].messages.$get(
+        { param: { sessionId } },
+        { headers: await getAuthHeaders(authRef.current) },
+      )
       const dbMessages = storedCodingMessagesSchema.parse(await res.json())
       if (cancelled) return
 

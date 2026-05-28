@@ -5,6 +5,7 @@ import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import { db, getTextFromMessageParts, type Prisma } from "@matcode/db"
 import { chatRequestSchema, getToolsForMode, modes, storedMessagePartsSchema } from "@matcode/ai"
+import type { ClerkAuth, ClerkAuthEnv } from "../middleware/clerk-auth"
 
 const deepseek = createDeepSeek({ apiKey: process.env.DEEPSEEK_API_KEY })
 const MODEL_ID = "deepseek-reasoner"
@@ -14,6 +15,18 @@ Use tools only when the user asks you to inspect, modify, run, or search the cod
 Do not call tools for general questions, pasted text, summaries, or simple conversation. Always confirm destructive operations before executing them.`
 
 const createSessionSchema = z.object({ title: z.string().trim().min(1).max(80).optional() })
+
+const sessionSelect = {
+  createdAt: true,
+  id: true,
+  title: true,
+  updatedAt: true,
+} satisfies Prisma.SessionSelect
+
+function getAuthenticatedUserId(auth: ClerkAuth) {
+  if ("userId" in auth && typeof auth.userId === "string" && auth.userId) return auth.userId
+  return null
+}
 
 function cleanGeneratedTitle(value: string) {
   const title = value
@@ -34,9 +47,12 @@ async function generateSessionTitle(prompt: string) {
   return cleanGeneratedTitle(text)
 }
 
-export const sessions = new Hono()
+export const sessions = new Hono<ClerkAuthEnv>()
   .get("/", async (c) => {
-    const list = await db.session.findMany({ orderBy: { updatedAt: "desc" } })
+    const userId = getAuthenticatedUserId(c.var.auth)
+    if (!userId) return c.json({ error: "Authenticated user required" }, 401)
+
+    const list = await db.session.findMany({ orderBy: { updatedAt: "desc" }, select: sessionSelect, where: { userId } })
     return c.json(list)
   })
   .post(
@@ -45,13 +61,22 @@ export const sessions = new Hono()
       if (result.success === false) return c.json({ error: z.flattenError(result.error) }, 400)
     }),
     async (c) => {
+      const userId = getAuthenticatedUserId(c.var.auth)
+      if (!userId) return c.json({ error: "Authenticated user required" }, 401)
+
       const { title } = c.req.valid("json")
-      const session = await db.session.create({ data: { title } })
+      const session = await db.session.create({ data: { title, userId }, select: sessionSelect })
       return c.json(session)
     },
   )
   .get("/:sessionId/messages", async (c) => {
+    const userId = getAuthenticatedUserId(c.var.auth)
+    if (!userId) return c.json({ error: "Authenticated user required" }, 401)
+
     const { sessionId } = c.req.param()
+    const session = await db.session.findFirst({ where: { id: sessionId, userId }, select: { id: true } })
+    if (!session) return c.json({ message: "Not Found" }, 404)
+
     const messages = await db.message.findMany({
       where: { sessionId },
       orderBy: { createdAt: "asc" },
@@ -64,12 +89,25 @@ export const sessions = new Hono()
       if (result.success === false) return c.json({ error: z.flattenError(result.error) }, 400)
     }),
     async (c) => {
+      const userId = getAuthenticatedUserId(c.var.auth)
+      if (!userId) return c.json({ error: "Authenticated user required" }, 401)
+
       const { sessionId } = c.req.param()
       const { messages, mode } = c.req.valid("json")
+      const session = await db.session.findFirst({ where: { id: sessionId, userId }, select: { id: true } })
+      if (!session) return c.json({ message: "Not Found" }, 404)
 
       const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")
       let titlePromise: Promise<string> | undefined
       if (lastUserMsg) {
+        const existingUserMessage = await db.message.findUnique({
+          where: { id: lastUserMsg.id },
+          select: { session: { select: { userId: true } }, sessionId: true },
+        })
+        if (existingUserMessage && (existingUserMessage.sessionId !== sessionId || existingUserMessage.session.userId !== userId)) {
+          return c.json({ message: "Not Found" }, 404)
+        }
+
         const existingMessageCount = await db.message.count({ where: { sessionId } })
         if (existingMessageCount === 0) {
           const promptText = getTextFromMessageParts(lastUserMsg.parts)

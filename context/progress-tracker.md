@@ -488,3 +488,133 @@ In progress — scaffolding
 - Paste pill resa inline con la textarea: `[Pasted N lines]` non forza più una nuova riga, l'utente può scrivere accanto al signal, e il placeholder della textarea viene nascosto quando esiste un paste block attivo.
 - `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo la pill inline: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
 - `bun run check` rieseguito dopo la pill inline: fallisce ancora solo sugli issue preesistenti già tracciati (`unused files`, dipendenza `pg` inutilizzata).
+- Toast API CLI aggiunta: `ToastProvider`/`useToast()` espongono `show()`, helper variant, `dismiss(id)` e `clear()` con stack massimo di 3 toast e drop del più vecchio.
+- `ToastViewport` renderizza notifiche non interattive absolute in alto a destra, theme-aware, con bordo sinistro colorato per variant e timer per auto-dismiss.
+- `RootLayout` monta `ToastProvider` tra `SessionsProvider` e `DialogProvider`; i toast restano separati dai layer keyboard di `InteractionProvider` e non bloccano input/menu/dialog.
+- I comandi placeholder (`/help`, `/clear`, `/history`, `/model`, `/settings`) ora mostrano un toast info invece di non fare nulla, testando l'API senza aggiungere nuovi screen.
+- `bun run check` rieseguito dopo la toast API: fallisce ancora sugli issue preesistenti di dead-code/dependencies (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo la toast API: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-toast-check` passa, confermando che l'entry CLI risolve correttamente il nuovo provider toast.
+- `@clerk/backend` installato in `apps/server/` come dipendenza di `@monocode/server`, preparando il package server per l'integrazione auth.
+- `bun run check` rieseguito dopo l'installazione Clerk: fallisce ancora sugli issue preesistenti e segnala anche `@clerk/backend` inutilizzato finché l'integrazione auth server non importerà il package.
+
+## Completed (sessione corrente — CLI browser auth PKCE)
+
+- `oauth4webapi` installato in `apps/cli/` con `bun add oauth4webapi --ignore-scripts` dopo il blocco preinstall Prisma già noto.
+- `apps/cli/.env.example` aggiornato ai nomi Clerk single-underscore: rimossi i riferimenti a `CLERK_OAUTH_CLIENT_SECRET` e mantenuti `CLERK_FRONTEND_API`, `CLERK_OAUTH_CLIENT_ID`, `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`.
+- `apps/cli/src/types/auth.ts` aggiunto con `AuthSession`, `AuthUserInfo`, `AuthStatus` e `AuthContextValue`; la sessione salvata è camelCase.
+- `apps/cli/src/lib/auth/` aggiunto: config env/discovery issuer, apertura browser con `Bun.spawn()`, callback server temporaneo con `Bun.serve()`, e flow PKCE S256 con discovery OIDC, token exchange e userinfo.
+- `AuthProvider` aggiunto e montato in `RootLayout`: stato sessione solo in memoria, status `unauthenticated`/`authenticating`/`authenticated`/`error`, nessuna persistenza.
+- Comando `/login` aggiunto a tipi e registry; `CommandRuntimeProvider` chiama `auth.actions.login()` e mostra toast info/success/error tramite `ToastProvider`.
+- Confermato il confine di scope: nessuna modifica a `apps/server/`; private access gate, Authorization header e refresh-token flow restano deferred.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-check` passa.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto, issue già tracciata.
+- `bun run check` rieseguito dopo auth CLI: fallisce ancora sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg/Clerk inutilizzate).
+- `CLERK_FRONTEND_API` normalization accetta sia issuer URL sia URL `.well-known/openid-configuration`, prima di passare l'issuer a `oauth4webapi.discoveryRequest()`.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-check-2` passa dopo la normalizzazione issuer.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo la normalizzazione issuer: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` rieseguito dopo la normalizzazione issuer: fallisce ancora solo sugli stessi issue preesistenti già tracciati.
+- Callback OAuth CLI aggiornato da porta random a loopback fisso `http://127.0.0.1:8976/oauth/callback`, così Clerk può validare un redirect URI esatto pre-registrato.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-port-check` passa dopo il redirect fisso.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo il redirect fisso: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` rieseguito dopo il redirect fisso: fallisce ancora solo sugli stessi issue preesistenti già tracciati.
+- `/login` ora aggiunge `prompt=login` all'authorize URL, così Clerk forza una nuova autenticazione invece di riusare silenziosamente la sessione browser corrente.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-prompt-check` passa dopo `prompt=login`.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo `prompt=login`: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` rieseguito dopo `prompt=login`: fallisce ancora solo sugli stessi issue preesistenti già tracciati.
+- Comando `/auth` aggiunto: legge solo `AuthProvider` in memoria e mostra un toast diagnostico con status, utente, scadenza, token type, scope e presenza dei token senza stampare token completi né salvare dati su disco.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-command-check` passa dopo `/auth`.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo `/auth`: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` rieseguito dopo `/auth`: fallisce ancora solo sugli stessi issue preesistenti già tracciati.
+
+## Completed (sessione corrente — CLI auth refresh automatico)
+
+- Helper auth refresh aggiunti in `apps/cli/src/lib/auth/`: `token-expiry.ts` centralizza skew 60s, expired/expiring e delay timer; `refresh-token.ts` usa `oauth4webapi.refreshTokenGrantRequest()` / `processRefreshTokenResponse()` con `oauth.None()` per il public client Clerk.
+- `AuthProvider` esteso con `actions.refreshAccessToken(): Promise<AuthSession>`, deduplica dei refresh concorrenti tramite `refreshPromiseRef`, `sessionRef` per usare la sessione corrente, timer automatico a `expiresAt - 60_000` e refresh immediato quando il token è già nella finestra di scadenza.
+- Refresh token rotation gestita: `accessToken` viene sempre aggiornato, `refreshToken` e `idToken` vengono sostituiti solo se Clerk restituisce nuovi valori, `expiresAt` richiede `expires_in` valido e `userInfo` viene mantenuto in memoria.
+- Failure policy auth aggiornata: se manca `refreshToken` o il refresh grant fallisce, la sessione in memoria viene svuotata, lo stato passa a `error` e viene mostrato un toast che chiede di rilanciare `/login`.
+- `ToastProvider` ora avvolge `AuthProvider` in `RootLayout`, così il provider auth può mostrare toast automatici senza passare dal runtime comandi.
+- `/auth` ora mostra anche `expired` ed `expiring`, continuando a non stampare token completi.
+- `architecture.md` aggiornato con il nuovo contratto `AuthProvider` e il comportamento refresh CLI-only.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-refresh-check` passa dopo il refresh automatico.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo il refresh automatico: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` inizialmente segnalava un nuovo export inutilizzato `authRefreshSkewMs`; corretto rendendo la costante locale all'helper di scadenza token.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-refresh-check-2` passa dopo la correzione Fallow.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo la correzione Fallow: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` rieseguito dopo la correzione Fallow: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg/Clerk inutilizzate).
+- `AuthProvider.actions.refreshAccessToken()` ora applica la stessa failure policy anche se invocata senza sessione/refresh token corrente: clear session, stato `error`, toast e richiesta di nuovo `/login`.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-refresh-check-3` passa dopo il tweak finale.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo il tweak finale: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` rieseguito dopo il tweak finale: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg/Clerk inutilizzate).
+- Helper scadenza auth rinominato da `apps/cli/src/lib/auth/session.ts` a `apps/cli/src/lib/auth/token-expiry.ts` per evitare ambiguità con le sessioni chat/applicative; comportamento invariato.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-token-expiry-rename` passa dopo il rename.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo il rename: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` rieseguito dopo il rename: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg/Clerk inutilizzate).
+
+## Completed (sessione corrente — CLI auth logout)
+
+- Helper `apps/cli/src/lib/auth/revoke-refresh-token.ts` aggiunto: usa `getAuthConfig()`, discovery OAuth via `oauth.discoveryRequest()` / `processDiscoveryResponse()`, richiede `revocation_endpoint` dalla metadata e chiama `oauth.revocationRequest()` con `oauth.None()` e `token_type_hint=refresh_token`.
+- `AuthProvider` esteso con `actions.logout(): Promise<void>` e deduplica tramite `logoutPromiseRef`; legge la sessione corrente da `sessionRef`, revoca solo il refresh token quando presente e cancella sempre la sessione in memoria alla fine.
+- Failure policy logout: se la revoca remota fallisce viene mostrato un toast warning, ma il logout locale completa comunque. L'access token non viene revocato e resta valido fino a scadenza naturale.
+- Comando `/logout` aggiunto al registry e gestito in `CommandRuntimeProvider`; `/auth` resta diagnostico e continua a mostrare solo presenza token, mai token completi.
+- `architecture.md` aggiornato con il comportamento logout Clerk CLI-only e la scelta di non revocare access token in questa fase.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo `/logout`: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto, issue già tracciata.
+- `bun run check` rieseguito dopo `/logout`: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg/Clerk inutilizzate).
+- `AuthProvider.actions.clearSession` rimosso dall'API pubblica `useAuth()`: resta helper interno del provider usato da logout e failure policy refresh, evitando logout locali accidentali che bypassano la revoca del refresh token.
+
+## Completed (sessione corrente — server auth middleware)
+
+- Middleware Hono Clerk aggiunto in `apps/server/src/middleware/clerk-auth.ts`: usa `@clerk/backend`, autentica `c.req.raw`, risponde `401` se non autenticato e salva `auth` nelle variables Hono.
+- Subpath export `@monocode/server/middleware/clerk-auth` aggiunto per rendere il middleware raggiungibile senza montarlo in `app.ts` o nelle route.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati; il nuovo middleware non compare più tra gli unused files e `@clerk/backend` non compare più tra le unused dependencies.
+- `architecture.md` aggiornato con `server/src/middleware/` e con lo stato auth corrente: middleware server disponibile ma non montato, login/session state ancora CLI-side.
+- Middleware Clerk montato globalmente in `apps/server/src/app.ts` dopo `logger()` e prima di `/sessions`, così le route server richiedono autenticazione.
+- Check obbligatori `CLERK_SECRET_KEY` e `CLERK_PUBLISHABLE_KEY` aggiunti in `apps/server/src/index.ts`, mantenendo gli env gate fuori da `app.ts`.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo il mount globale.
+- `bun run check` rieseguito dopo il mount globale: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+
+## Completed (sessione corrente — CLI auth headers)
+
+- Root cause confermata: dopo il mount globale Clerk, login e `/auth` funzionavano ma le chiamate CLI a `/sessions` e `/sessions/:sessionId/messages` non inviavano ancora `Authorization`, quindi il server rispondeva `401`.
+- `apps/cli/src/lib/auth/request-headers.ts` aggiunto: costruisce gli header auth dalla sessione in memoria e refresha l'access token se è nella finestra di scadenza.
+- `SessionsProvider.refreshSessions()` usa gli header auth per `GET /sessions` e riprova automaticamente dopo login perché ora vive sotto `AuthProvider`.
+- `HomeScreen` usa gli header auth per `POST /sessions`, così la creazione sessione prima del messaggio iniziale passa il gate server.
+- `useSessionChat` usa gli header auth per l'hydration DB (`GET /sessions/:sessionId/messages`) e per lo stream `DefaultChatTransport` (`POST /sessions/:sessionId/messages`).
+- Provider order aggiornato: `ToastProvider` → `AuthProvider` → `SessionsProvider` → `DialogProvider` → `InteractionProvider` → `CommandRuntimeProvider`, mantenendo la cache sessioni leggibile dai dialog.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-auth-headers-check` passa.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+- Fix 401 post-login: il middleware Clerk ora accetta `acceptsToken: ["session_token", "oauth_token"]`; il flow CLI PKCE invia OAuth access token, mentre il default Clerk accettava solo session token.
+- Tipo `auth` del middleware aggiornato da session-only a `Extract<AuthObject, { isAuthenticated: true }>` per rappresentare correttamente session token e OAuth token autenticati.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo l'acceptance OAuth token; build CLI passa ancora.
+- Log debug temporanei aggiunti nel middleware Clerk: metodo/path, presenza e schema Authorization, `requestState.status`, `tokenType`, `isAuthenticated`, `reason` e `message`, senza stampare token completi.
+- Fix header Authorization CLI: `getAuthHeaders()` ora invia sempre `Bearer <accessToken>` con B maiuscola. Il precedente `${session.tokenType}` produceva `bearer` lowercase, Clerk non lo parseava e cadeva su `dev-browser-missing`/`session_token`.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-bearer-case-check` passa dopo il fix Bearer.
+
+## Completed (sessione corrente — persistent CLI auth session)
+
+- Storage locale sessione auth aggiunto in `apps/cli/src/lib/auth/session-storage.ts`: path `~/.config/monocode/auth-session.json` o `$XDG_CONFIG_HOME/monocode/auth-session.json`, directory `0700`, file `0600`, scrittura via temp file + rename e validazione Zod prima dell'uso.
+- `AuthStatus` esteso con `loading`; `AuthProvider` parte in hydration, carica la sessione persistita e passa ad `authenticated` senza richiedere `/login` se il token è valido.
+- Se la sessione persistita è nella finestra di refresh, l'avvio CLI esegue subito refresh token grant, salva la sessione ruotata e poi marca auth come `authenticated`.
+- Login e refresh salvano la sessione locale aggiornata; logout, refresh failure, sessione invalida o refresh token mancante cancellano il file locale oltre allo stato in memoria.
+- `SessionsProvider` ora aspetta `auth.state.status === "loading"` prima di provare `GET /sessions`, evitando errori “please login” durante l'hydration iniziale.
+- Helper toast `info`/`success`/`warning` resi referenzialmente stabili in `ToastProvider`, così i toast non fanno rieseguire l'hydration auth.
+- `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-persistent-auth-check-2` passa.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.
+- Logout CLI aggiornato: `SessionsProvider` espone `clearSessions()`, svuota la cache quando manca una sessione auth e `/logout` ora chiama `clearSessions()` dopo `auth.actions.logout()` prima di navigare a `/`.
+- Verifica dopo logout cache/redirect: build CLI passa; typecheck CLI fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.
+
+## Completed (sessione corrente — user-owned sessions)
+
+- Tutte le sessioni e i messaggi di test esistenti sono stati eliminati dal database (`Session` e `Message` count verificati a 0) prima di rendere obbligatorio il nuovo campo owner.
+- `packages/db/prisma/schema.prisma`: aggiunto `Session.userId String` obbligatorio e indice `@@index([userId, updatedAt])` per listare le sessioni dell'utente autenticato in ordine recente.
+- `bunx --bun prisma db push` e `bunx --bun prisma generate` eseguiti da `packages/db`, database sincronizzato e client Prisma rigenerato.
+- `apps/server/src/routes/sessions.ts`: route tipate con `ClerkAuthEnv`, helper `getAuthenticatedUserId()` e scope per Clerk user id su `GET /sessions`, `POST /sessions`, `GET /sessions/:sessionId/messages` e `POST /sessions/:sessionId/messages`.
+- Le route messaggi verificano che la sessione richiesta appartenga all'utente corrente; sessioni non appartenenti all'utente rispondono `404` per non rivelare esistenza cross-user.
+- `POST /sessions` salva `userId` dal Clerk auth object; `GET/POST /sessions` selezionano solo `id`, `title`, `createdAt`, `updatedAt`, mantenendo `userId` server-side e fuori dal contratto CLI.
+- Protezione aggiunta sull'upsert del messaggio user: se un `message.id` esiste già su una sessione di un altro user/sessione, la route ritorna `404` invece di aggiornarlo.
+- Log auth debug del middleware mantenuti ma protetti da `AUTH_DEBUG=1`, così non sporcano più l'output normale del server.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; build CLI passa contro il nuovo RPC type.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.
+- Database azzerato di nuovo con `bunx --bun prisma db push --force-reset --accept-data-loss`; verifica `bun scripts/verify.ts` conferma `0 session(s), 0 message(s)` per testare le sessioni associate all'utente.
