@@ -619,3 +619,12 @@ In progress — scaffolding
 - `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.
 - Database azzerato di nuovo con `bunx --bun prisma db push --force-reset --accept-data-loss`; verifica `bun scripts/verify.ts` conferma `0 session(s), 0 message(s)` per testare le sessioni associate all'utente.
 - Skill opencode project-local `hunk-review` installata in `.opencode/skills/hunk-review/SKILL.md` per controllare sessioni Hunk live via `hunk session *` senza avviare comandi TUI interattivi.
+
+## Completed (sessione corrente — coding agent centralization)
+
+- `packages/ai/src/agents/coding-agent.ts` aggiunto: centralizza system prompt, applicazione suffix mode, selezione tool, `stepCountIs(10)` e chiamata `streamText()` per l'agent coding.
+- `apps/server/src/routes/sessions.ts` alleggerita: mantiene auth/session ownership, persistenza messaggi, titolo sessione e callback `onFinish`, ma delega la composizione agentica a `createCodingAgentStream()`.
+- Il provider model resta server-side per ora: la route passa `deepseek(CODING_AGENT_MODEL_ID)` alla factory agentica, evitando di accoppiare `@matcode/ai` all'env/runtime DeepSeek mentre non esiste ancora la scelta modello.
+- Il modello per i titoli sessione è stato separato semanticamente con `SESSION_TITLE_MODEL_ID` in `sessions.ts`, così la futura scelta del modello agent non cambierà automaticamente la mini-call di title generation.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo l'estrazione agent.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.

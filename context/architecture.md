@@ -97,6 +97,7 @@ Monocode/
 
 ## Coding Agent Tools
 
+- `packages/ai/src/agents/coding-agent.ts` — shared coding-agent stream composition. It owns the base system prompt, mode prompt suffix application, tool selection, `stepCountIs(10)`, and `streamText()` call. Server routes pass the concrete provider model and persistence callbacks so HTTP/auth/DB ownership stays in `apps/server`.
 - `packages/ai/src/tools/schemas.ts` — Zod validation schemas and explicit `Args`/`Input` types for each tool.
 - `packages/ai/src/tools/definitions.ts` — server-facing AI SDK tool definitions (`description` + `inputSchema` only). No `execute` server-side.
 - `packages/ai/src/tools/executor.ts` — CLI-side execution dispatcher. It accepts an AI SDK-shaped static tool call (`toolName` + `input`), validates with the matching schema, then calls the local implementation.

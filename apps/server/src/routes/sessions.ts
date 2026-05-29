@@ -1,18 +1,14 @@
 import { Hono } from "hono"
-import { streamText, convertToModelMessages, generateText, stepCountIs } from "ai"
+import { generateText } from "ai"
 import { createDeepSeek } from "@ai-sdk/deepseek"
 import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import { db, getTextFromMessageParts, type Prisma } from "@matcode/db"
-import { chatRequestSchema, getToolsForMode, modes, storedMessagePartsSchema } from "@matcode/ai"
+import { CODING_AGENT_MODEL_ID, chatRequestSchema, createCodingAgentStream, storedMessagePartsSchema } from "@matcode/ai"
 import type { ClerkAuth, ClerkAuthEnv } from "../middleware/clerk-auth"
 
 const deepseek = createDeepSeek({ apiKey: process.env.DEEPSEEK_API_KEY })
-const MODEL_ID = "deepseek-reasoner"
-
-const SYSTEM_PROMPT = `You are a coding assistant. Answer the user's prompt directly.
-Use tools only when the user asks you to inspect, modify, run, or search the codebase, or when a tool is necessary to answer accurately.
-Do not call tools for general questions, pasted text, summaries, or simple conversation. Always confirm destructive operations before executing them.`
+const SESSION_TITLE_MODEL_ID = "deepseek-reasoner"
 
 const createSessionSchema = z.object({ title: z.string().trim().min(1).max(80).optional() })
 
@@ -39,7 +35,7 @@ function cleanGeneratedTitle(value: string) {
 
 async function generateSessionTitle(prompt: string) {
   const { text } = await generateText({
-    model: deepseek(MODEL_ID),
+    model: deepseek(SESSION_TITLE_MODEL_ID),
     system: "Generate a concise chat title. Return only the title, no quotes, no punctuation at the end. Use 2 to 5 words.",
     prompt: `Categorize this chat from the first user message:\n\n${prompt}`,
   })
@@ -122,23 +118,16 @@ export const sessions = new Hono<ClerkAuthEnv>()
             sessionId,
             role: "user",
             mode,
-            model: MODEL_ID,
+            model: CODING_AGENT_MODEL_ID,
             parts: storedMessagePartsSchema.parse(lastUserMsg.parts),
           },
         })
       }
 
-      const modeConfig = modes[mode]
-      const system = modeConfig.systemPromptSuffix
-        ? `${SYSTEM_PROMPT}\n\n${modeConfig.systemPromptSuffix}`
-        : SYSTEM_PROMPT
-
-      const result = streamText({
-        model: deepseek(MODEL_ID),
-        system,
-        messages: await convertToModelMessages(messages),
-        stopWhen: stepCountIs(10),
-        tools: getToolsForMode(mode),
+      const result = await createCodingAgentStream({
+        messages,
+        mode,
+        model: deepseek(CODING_AGENT_MODEL_ID),
         onFinish: async ({ text, reasoningText, usage }) => {
           if (titlePromise) {
             await db.session.update({
@@ -157,7 +146,7 @@ export const sessions = new Hono<ClerkAuthEnv>()
               sessionId,
               role: "assistant",
               mode,
-              model: MODEL_ID,
+              model: CODING_AGENT_MODEL_ID,
               parts,
               metadata: {
                 promptTokens: usage.inputTokens ?? 0,
