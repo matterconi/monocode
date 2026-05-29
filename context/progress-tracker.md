@@ -618,3 +618,4 @@ In progress — scaffolding
 - `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; build CLI passa contro il nuovo RPC type.
 - `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.
 - Database azzerato di nuovo con `bunx --bun prisma db push --force-reset --accept-data-loss`; verifica `bun scripts/verify.ts` conferma `0 session(s), 0 message(s)` per testare le sessioni associate all'utente.
+- Skill opencode project-local `hunk-review` installata in `.opencode/skills/hunk-review/SKILL.md` per controllare sessioni Hunk live via `hunk session *` senza avviare comandi TUI interattivi.
