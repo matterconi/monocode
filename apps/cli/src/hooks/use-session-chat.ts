@@ -4,6 +4,7 @@ import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } fro
 import { executeTool, storedCodingMessagesSchema, type CodingUIMessage, type ModeName } from "@matcode/ai"
 import { getAuthHeaders } from "../lib/auth/request-headers"
 import { client } from "../lib/client"
+import { useAgent } from "../providers/agent"
 import { useAuth } from "../providers/auth"
 import { useMode } from "../providers/mode"
 
@@ -17,6 +18,10 @@ export function useSessionChat({ sessionId, initialPrompt }: UseSessionChatOptio
   const authRef = useRef(auth)
   authRef.current = auth
 
+  const { modelId } = useAgent()
+  const modelRef = useRef(modelId)
+  modelRef.current = modelId
+
   const { mode } = useMode()
   const modeRef = useRef(mode)
   modeRef.current = mode
@@ -27,7 +32,7 @@ export function useSessionChat({ sessionId, initialPrompt }: UseSessionChatOptio
     transportRef.current = new DefaultChatTransport({
       api: client.sessions[":sessionId"].messages.$url({ param: { sessionId } }).toString(),
       headers: () => getAuthHeaders(authRef.current),
-      body: () => ({ mode: modeRef.current }),
+      body: () => ({ mode: modeRef.current, model: modelRef.current }),
     })
   }
 

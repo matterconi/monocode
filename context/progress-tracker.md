@@ -628,3 +628,36 @@ In progress — scaffolding
 - Il modello per i titoli sessione è stato separato semanticamente con `SESSION_TITLE_MODEL_ID` in `sessions.ts`, così la futura scelta del modello agent non cambierà automaticamente la mini-call di title generation.
 - `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo l'estrazione agent.
 - `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.
+
+## Completed (sessione corrente — model registry)
+
+- `packages/ai/src/models/index.ts` aggiunto: registry condiviso con `modelSchema`, `ModelId`, `models`, `modelOrder`, `getModelConfig()`, `defaultCodingModelId` e `defaultTitleModelId`.
+- Registry iniziale limitato a DeepSeek (`deepseek-reasoner`, `deepseek-chat`) mantenendo metadata provider/capability pronti per UI futura.
+- `chatRequestSchema` ora valida `model` e defaulta a `defaultCodingModelId`, quindi il server può già accettare un model scelto senza richiedere modifiche immediate alla CLI.
+- `sessions.ts` usa il `model` validato per coding agent e persistenza messaggi, mentre `generateSessionTitle()` usa `defaultTitleModelId` statico per non dipendere dalla futura scelta utente.
+- Boundary API key chiarito: il registry descrive i modelli ma non crea provider client e non legge env; `DEEPSEEK_API_KEY` resta server-side in `apps/server`.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo il registry modelli.
+- Provider OpenAI aggiunto al registry con `gpt-4o-mini`, accanto ai modelli DeepSeek esistenti, per validare subito il caso multi-provider.
+- `apps/server/src/ai/model-resolver.ts` aggiunto: risolve `ModelId` in model AI SDK concreto usando `createDeepSeek()` o `createOpenAI()` e mantiene le API key nel server (`DEEPSEEK_API_KEY`, `OPENAI_API_KEY`).
+- `@ai-sdk/openai` installato in `@monocode/server`; `OPENAI_API_KEY` resta opzionale all'avvio e viene richiesta solo se si seleziona un modello OpenAI.
+- `sessions.ts` ora usa `resolveLanguageModel(model)` per il coding agent e `resolveLanguageModel(defaultTitleModelId)` per la title generation.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo il resolver multi-provider; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.
+- Registry modelli riorganizzato: `packages/ai/src/models/constants/models.ts` contiene solo definizioni statiche/order, `schemas.ts` contiene gli schema Zod, `types.ts` i tipi espliciti (`ModelDefinition`, `ModelSettingOverrides`) e `defaults.ts` i default coding/title.
+- `AgentProvider` semplificato: rimosso lo stato `modelSettings`, `updateModelSettings()`, `resetModelSettings()` e il merge generico; per ora la CLI mantiene solo `modelId` e `modelDefinition`, mentre gli override restano supportati solo come boundary opzionale server-side.
+- `useSessionChat` invia solo `model` oltre a `mode`; `modelSettings` non viene più inviato dalla CLI finché non esiste una UI `/model` con mapping provider-specific verificato.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo il refactor registry; `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati.
+- `capabilities` rimosso dal registry modelli: tool selection e reasoning restano responsabilità di agent/mode/provider runtime, non booleane generiche premature dentro `ModelDefinition`.
+- `resolveProviderOptions()` placeholder rimosso da `model-resolver.ts`: il resolver valida ancora eventuali override supportati, ma non introduce un punto di estensione che restituisce sempre `undefined` finché non esiste un mapping provider-specific reale.
+- Provider modelli consolidato su Vercel AI Gateway: gli id registry ora usano il formato Gateway (`deepseek/deepseek-v3.2-thinking`, `deepseek/deepseek-v4-flash`, `openai/gpt-5.5`) verificato tramite `https://ai-gateway.vercel.sh/v1/models`.
+- `model-resolver.ts` semplificato a `gateway(modelId)` importato da `ai`; rimossi i client `createDeepSeek()`/`createOpenAI()` e le dipendenze server `@ai-sdk/deepseek`/`@ai-sdk/openai`.
+- Env server aggiornato da `DEEPSEEK_API_KEY`/`OPENAI_API_KEY` a `AI_GATEWAY_API_KEY`; `apps/cli/.env.example` aggiornato di conseguenza.
+- `providerOptions` rimosso dal runtime resolver, dalla sessions route e da `createCodingAgentStream()`: verrà reintrodotto solo quando esisterà un mapping Gateway/provider-specific reale per un setting supportato.
+- Registry Gateway esteso con modelli economici/interessanti verificati: DeepSeek V3.1 Terminus, GPT-5.4 Nano, GPT-4.1 Mini, Mercury Coder Small, Trinity Large Preview, GLM-4.5 Air, Step 3.7 Flash, MiniMax M2.1/M2.1 Lightning, KAT Coder Pro V1/V2, Morph V3 Fast, Qwen3 Coder, Qwen3 Next Instruct/Thinking, Claude Haiku, Gemini Flash Lite e Magistral Small.
+- `modelOrder` ora deriva da `modelIds` per evitare duplicazione manuale dell'ordine registry.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo l'estensione modelli; typecheck CLI resta fallito solo su `apps/cli/src/scripts/test-chat.ts` obsoleto e `bun run check` resta sui preesistenti tracciati.
+- Default coding model aggiornato a `deepseek/deepseek-v4-flash`, allineandolo al modello base desiderato per i test; `defaultTitleModelId` resta sullo stesso V4 Flash.
+- Test Gateway diretto ha confermato che `deepseek/deepseek-v4-flash` risponde 403 su account free tier (`Free tier users do not have access to this model`); `google/gemini-2.0-flash-lite` risponde correttamente.
+- Default coding/title temporaneamente spostati su `google/gemini-2.0-flash-lite` per sbloccare il test locale con la key attuale, mantenendo `deepseek/deepseek-v4-flash` nel registry per account con crediti paid.
+- Testati tutti i modelli attualmente nel registry contro la key Gateway free-tier: rimossi i modelli paid-only con 403 (`deepseek/deepseek-v4-flash`, `openai/gpt-5.5`, `google/gemini-3.1-flash-lite`). I 429 sono stati trattati come free-tier rate limit, non come paid-only.
+- Default coding/title aggiornati a `deepseek/deepseek-v3.1-terminus`, che ha risposto correttamente con la key attuale durante il test.
+- Registry Gateway ristretto ulteriormente ai soli modelli che hanno risposto `OK` durante il test con la key attuale (`deepseek/deepseek-v3.2-thinking`, `deepseek/deepseek-v3.1-terminus`), escludendo anche i modelli free-tier ma temporaneamente rate-limited con 429 per rendere il test locale più prevedibile.

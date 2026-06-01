@@ -1,5 +1,6 @@
 export * from "./tools"
 export * from "./modes"
+export * from "./models"
 export * from "./messages"
 export * from "./agents"
 export * from "./types"

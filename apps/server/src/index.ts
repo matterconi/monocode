@@ -1,7 +1,7 @@
 import { app } from "./app"
 
-if (!process.env.DEEPSEEK_API_KEY) {
-  console.error("Missing DEEPSEEK_API_KEY")
+if (!process.env.AI_GATEWAY_API_KEY) {
+  console.error("Missing AI_GATEWAY_API_KEY")
   process.exit(1)
 }
 

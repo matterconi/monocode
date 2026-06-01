@@ -1,6 +1,7 @@
 import type { UIMessage } from "ai"
 import { z } from "zod"
 import { modeSchema } from "../modes"
+import { defaultCodingModelId, modelSchema, modelSettingOverridesSchema } from "../models"
 import type { CodingUIMessage } from "../types"
 
 export const uiMessageSchema: z.ZodType<UIMessage> = z.custom<UIMessage>((value) => {
@@ -19,6 +20,8 @@ export const uiMessageSchema: z.ZodType<UIMessage> = z.custom<UIMessage>((value)
 export const chatRequestSchema = z.object({
   messages: z.array(uiMessageSchema),
   mode: modeSchema.default("build"),
+  model: modelSchema.default(defaultCodingModelId),
+  modelSettings: modelSettingOverridesSchema.optional(),
 })
 
 export const storedMessagePartsSchema = z.array(

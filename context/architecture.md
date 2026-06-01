@@ -23,6 +23,8 @@ Monocode/
 │       ├── app.ts        # Hono app composition — mounts all route groups
 │       ├── rpc.ts        # type-only RPC contract export
 │       ├── index.ts      # Bun.serve entry
+│       ├── ai/           # server-side AI provider resolution
+│       │   └── model-resolver.ts # ModelId -> provider LanguageModel using server env keys
 │       ├── middleware/   # reusable Hono middleware, not mounted by default
 │       │   └── clerk-auth.ts # Clerk session auth middleware
 │       └── routes/       # one file per route group, flat
@@ -98,6 +100,8 @@ Monocode/
 ## Coding Agent Tools
 
 - `packages/ai/src/agents/coding-agent.ts` — shared coding-agent stream composition. It owns the base system prompt, mode prompt suffix application, tool selection, `stepCountIs(10)`, and `streamText()` call. Server routes pass the concrete provider model and persistence callbacks so HTTP/auth/DB ownership stays in `apps/server`.
+- `packages/ai/src/models/` — shared model registry split by responsibility: `constants/models.ts` holds static Vercel AI Gateway model definitions/order, `schemas.ts` holds runtime Zod schemas, `types.ts` holds derived model types, and `defaults.ts` holds coding/title defaults. It describes supported Gateway model ids but does not read API keys or create provider clients; Gateway credentials remain server-side env vars such as `AI_GATEWAY_API_KEY`.
+- `apps/server/src/ai/model-resolver.ts` — server-only resolver from shared `ModelId` to concrete AI SDK Gateway model via `gateway(modelId)`. It validates declared model setting overrides but does not create provider-specific clients.
 - `packages/ai/src/tools/schemas.ts` — Zod validation schemas and explicit `Args`/`Input` types for each tool.
 - `packages/ai/src/tools/definitions.ts` — server-facing AI SDK tool definitions (`description` + `inputSchema` only). No `execute` server-side.
 - `packages/ai/src/tools/executor.ts` — CLI-side execution dispatcher. It accepts an AI SDK-shaped static tool call (`toolName` + `input`), validates with the matching schema, then calls the local implementation.
@@ -109,6 +113,8 @@ Monocode/
 Tool architecture intentionally avoids a central generated registry. Adding a tool requires updating the schema, definitions, executor, call union, and UI tool types explicitly. This controlled duplication is preferred for now over `typeof registry`, indexed-access generics, or casts.
 
 Chat request and message persistence validation live in `@monocode/ai`: routes import `chatRequestSchema` instead of defining request schemas inline, use `storedMessagePartsSchema` before writing UI parts into Prisma JSON, and the CLI uses `storedCodingMessagesSchema` when hydrating DB messages. Modes use `modeSchema` from `@monocode/ai` as the shared runtime/type source of truth, so validated `mode` values can flow into `modes[mode]` and `getToolsForMode(mode)` without casts. `Message.mode` is a first-class DB column, not metadata, because it controls message semantics and stable UI rendering.
+
+Model selection uses `modelSchema` from `@monocode/ai` as the shared runtime/type source of truth. Static model metadata is named `ModelDefinition` / `modelDefinitions` and currently contains only product-facing metadata plus declared settings; agent behavior such as tool selection or reasoning display is not modeled as generic booleans in the registry. `chatRequestSchema` defaults missing `model` to `defaultCodingModelId`, while session title generation stays on `defaultTitleModelId` so future user-facing model selection changes only the coding agent and not the title mini-call. Vercel AI Gateway is the single model provider boundary: the server requires `AI_GATEWAY_API_KEY`, imports `gateway` from `ai`, and does not depend on provider SDK packages such as `@ai-sdk/deepseek` or `@ai-sdk/openai`. The CLI `AgentProvider` currently owns only selected `modelId`; model setting overrides stay out of CLI state until `/model` exposes verified Gateway/provider-specific settings.
 
 `Session.userId` stores the Clerk user id for the authenticated user that owns the session. Session list/create and message hydration/streaming are scoped by `c.var.auth.userId`; missing or non-user auth returns `401`, and session ids that do not belong to the current user return `404`. API responses keep `userId` server-side and only expose session fields needed by the CLI.
 

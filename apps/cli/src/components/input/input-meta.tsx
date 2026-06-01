@@ -1,10 +1,9 @@
+import { useAgent } from "../../providers/agent"
 import { useMode } from "../../providers/mode"
 import { useTheme } from "../../providers/theme"
 
-const MODEL_NAME = "deepseek-reasoner"
-const PROVIDER_NAME = "DeepSeek"
-
 export function InputStatus() {
+  const { modelDefinition } = useAgent()
   const { mode } = useMode()
   const { theme } = useTheme()
   const modeTheme = theme.modes[mode]
@@ -15,7 +14,7 @@ export function InputStatus() {
         {modeTheme.label} <span fg={theme.colors["text-placeholder"]}>·</span>
       </text>
       <text fg={theme.colors.textSoft}>
-        {MODEL_NAME} <span fg={theme.colors.dim}>({PROVIDER_NAME})</span>
+        {modelDefinition.label} <span fg={theme.colors.dim}>({modelDefinition.provider})</span>
       </text>
     </box>
   )

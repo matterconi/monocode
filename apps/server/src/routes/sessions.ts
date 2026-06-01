@@ -1,14 +1,16 @@
 import { Hono } from "hono"
 import { generateText } from "ai"
-import { createDeepSeek } from "@ai-sdk/deepseek"
 import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
 import { db, getTextFromMessageParts, type Prisma } from "@matcode/db"
-import { CODING_AGENT_MODEL_ID, chatRequestSchema, createCodingAgentStream, storedMessagePartsSchema } from "@matcode/ai"
+import {
+  chatRequestSchema,
+  createCodingAgentStream,
+  defaultTitleModelId,
+  storedMessagePartsSchema,
+} from "@matcode/ai"
+import { resolveLanguageModelRuntime, UnsupportedModelSettingError } from "../ai/model-resolver"
 import type { ClerkAuth, ClerkAuthEnv } from "../middleware/clerk-auth"
-
-const deepseek = createDeepSeek({ apiKey: process.env.DEEPSEEK_API_KEY })
-const SESSION_TITLE_MODEL_ID = "deepseek-reasoner"
 
 const createSessionSchema = z.object({ title: z.string().trim().min(1).max(80).optional() })
 
@@ -34,8 +36,9 @@ function cleanGeneratedTitle(value: string) {
 }
 
 async function generateSessionTitle(prompt: string) {
+  const runtime = resolveLanguageModelRuntime({ modelId: defaultTitleModelId })
   const { text } = await generateText({
-    model: deepseek(SESSION_TITLE_MODEL_ID),
+    model: runtime.model,
     system: "Generate a concise chat title. Return only the title, no quotes, no punctuation at the end. Use 2 to 5 words.",
     prompt: `Categorize this chat from the first user message:\n\n${prompt}`,
   })
@@ -89,7 +92,7 @@ export const sessions = new Hono<ClerkAuthEnv>()
       if (!userId) return c.json({ error: "Authenticated user required" }, 401)
 
       const { sessionId } = c.req.param()
-      const { messages, mode } = c.req.valid("json")
+      const { messages, mode, model, modelSettings } = c.req.valid("json")
       const session = await db.session.findFirst({ where: { id: sessionId, userId }, select: { id: true } })
       if (!session) return c.json({ message: "Not Found" }, 404)
 
@@ -118,16 +121,24 @@ export const sessions = new Hono<ClerkAuthEnv>()
             sessionId,
             role: "user",
             mode,
-            model: CODING_AGENT_MODEL_ID,
+            model,
             parts: storedMessagePartsSchema.parse(lastUserMsg.parts),
           },
         })
       }
 
+      let runtime: ReturnType<typeof resolveLanguageModelRuntime>
+      try {
+        runtime = resolveLanguageModelRuntime({ modelId: model, settings: modelSettings })
+      } catch (error) {
+        if (error instanceof UnsupportedModelSettingError) return c.json({ error: error.message }, 400)
+        throw error
+      }
+
       const result = await createCodingAgentStream({
         messages,
         mode,
-        model: deepseek(CODING_AGENT_MODEL_ID),
+        model: runtime.model,
         onFinish: async ({ text, reasoningText, usage }) => {
           if (titlePromise) {
             await db.session.update({
@@ -146,7 +157,7 @@ export const sessions = new Hono<ClerkAuthEnv>()
               sessionId,
               role: "assistant",
               mode,
-              model: CODING_AGENT_MODEL_ID,
+              model,
               parts,
               metadata: {
                 promptTokens: usage.inputTokens ?? 0,
