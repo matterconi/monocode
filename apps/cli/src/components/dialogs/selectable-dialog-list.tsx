@@ -7,6 +7,7 @@ import { useTheme } from "../../providers/theme"
 interface SelectableDialogListProps<TItem> {
   getItemId: (item: TItem, index: number) => string
   getItemKey: (item: TItem, index: number) => string
+  initialIndex?: number
   items: TItem[]
   onConfirm: (item: TItem) => void
   onSelect?: (item: TItem) => void
@@ -18,6 +19,7 @@ interface SelectableDialogListProps<TItem> {
 export function SelectableDialogList<TItem>({
   getItemId,
   getItemKey,
+  initialIndex,
   items,
   onConfirm,
   onSelect,
@@ -36,6 +38,7 @@ export function SelectableDialogList<TItem>({
   )
   const { handleSelectableListKeyDown, selectedIndex, selectIndex } = useSelectableList({
     getItemId: getIndexedItemId,
+    initialIndex,
     itemCount: items.length,
     onConfirm: (index) => {
       const item = items[index]

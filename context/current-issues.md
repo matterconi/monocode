@@ -118,3 +118,57 @@
 **Fix:** Il messaggio user non usa più `bottomInset`; usa padding verticale nativo simmetrico tramite `ChatPanel` (`paddingTop=1`, `paddingBottom=1`). `MessageList` è ora uno `<scrollbox>` sticky-bottom, e message/part wrapper usano `flexShrink={0}` dove serve per evitare overlap.
 
 **Related rendering decisions:** `PartReasoning` usa `ChatPanel variant="reasoning"` con bordo sinistro, senza background, padding verticale interno zero, padding laterale interno `1` e spacing esterno dedicato. Le parti assistant senza bordo sono indentate di 2 colonne per allinearsi al contenuto reasoning. La prima tool part dopo testo riceve `marginTop={1}`, ma non dopo reasoning per evitare padding duplicato.
+
+---
+
+## [FIXED] Model identity line can show the wrong provider after switches
+
+**Package:** `@matcode/ai`, `@matcode/cli`
+
+**Files:** `packages/ai/src/agents/coding-agent.ts`, `packages/ai/src/messages/schemas.ts`, `apps/cli/src/hooks/use-session-chat.ts`, `apps/cli/src/components/chat/chat-message.tsx`, `apps/cli/src/components/dialogs/model-dialog.tsx`
+
+**Symptom:** Dopo switch ripetuti del modello, l'assistant poteva mostrare una riga `Model: openai/...` anche quando l'utente pensava di usare DeepSeek; in un caso la riga mostrava anche un id non presente nel registry, segnale di testo allucinato/copied dalla cronologia.
+
+**Cause:** La riga `Model: ...` era generata dall'LLM tramite system prompt, quindi non era una fonte affidabile. Inoltre il dialog modelli selezionava inizialmente la prima riga della lista filtrata, non il modello attivo, rendendo possibile uno switch involontario con Enter.
+
+**Fix:** Rimossa l'identity prompt dal server. La UI renderizza la riga modello da `message.model` persistito o dal modello pending usato al submit corrente. Il dialog modelli inizializza la selezione sulla riga attiva.
+
+---
+
+## [OPEN] ai-resume-pdf typecheck fails on pre-existing files
+
+**Package:** `ai-resume-pdf`
+**Files:** `app/routes/api/auth.$.ts`, `app/routes/api/files.ts`, `app/routes/api/files.$id.ts`
+
+**Symptom:** `bun run typecheck` fallisce con errori TypeScript su questi file preesistenti (moduli `+types` mancanti, `Buffer` non assegnabile a `BodyInit`, `Date | null` non assegnabile a `Date`).
+
+**Cause:** I file sono stati creati in una sessione precedente e non sono stati aggiornati dopo le modifiche allo stack. Gli errori non sono causati dal lavoro corrente.
+
+**Fix needed:** Aggiornare o rimuovere questi file se non sono più necessari, oppure correggerne i tipi.
+
+---
+
+## [OPEN] ai-resume-pdf uses external Puter filesystem for PDF storage
+
+**Package:** `ai-resume-pdf`
+**Files:** `app/routes/upload.tsx`, `app/routes/resume.tsx`
+
+**Symptom:** I file PDF e le immagini preview vengono caricati/serviti tramite il filesystem esterno `Puter.js` (`fs.upload`/`fs.read`) invece che tramite API locali.
+
+**Cause:** Legacy dello stack originale basato su Puter.js. Dopo la migrazione a PostgreSQL e DeepSeek, il file storage non è stato migrato a un sistema interno.
+
+**Fix needed:** Valutare se servire i file direttamente tramite `/api/files/:id` (già esistente) per eliminare la dipendenza da Puter.js.
+
+---
+
+## [FIXED] Provider error leaves chat history and DB in degraded state
+
+**Package:** `@matcode/cli`, `@matcode/server`
+
+**Files:** `apps/cli/src/hooks/use-session-chat.ts`, `apps/server/src/routes/sessions.ts`
+
+**Symptom:** Dopo aver selezionato un modello non accessibile o fallito lato provider, la UI mostrava messaggi user senza risposta assistant e le richieste successive restavano degradate anche tornando a modelli funzionanti.
+
+**Cause:** `useChat.sendMessage()` aggiunge il messaggio user localmente prima della request; `clearError()` non modifica `messages`, quindi un errore provider lasciava history locale sporca. Lato server, persistere il messaggio user prima del completamento stream poteva lasciare turni DB orfani.
+
+**Fix:** `useSessionChat` salva uno snapshot pre-submit e in `onError()` ripristina la history, rimuove pending mode/model e mostra un toast d'errore. `sessions.ts` persiste user e assistant solo in `onFinish` dentro una transazione, e la title generation non parte più prima dello stream completato.

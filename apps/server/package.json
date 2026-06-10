@@ -12,6 +12,7 @@
     "start": "bun src/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^3.0.39",
     "@clerk/backend": "^3.4.13",
     "@hono/zod-validator": "^0.7.6",
     "@monocode/ai": "workspace:*",

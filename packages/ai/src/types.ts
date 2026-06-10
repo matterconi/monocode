@@ -1,5 +1,6 @@
 import type { UIMessage } from "ai"
 import type { ModeName } from "./modes"
+import type { ModelId } from "./models"
 import type {
   ListFilesArgs,
   ReadFileArgs,
@@ -45,5 +46,6 @@ export type CodingUITools = {
 type UnusedDataParts = Record<string, object>
 
 export type CodingUIMessage = UIMessage<MessageMetadata, UnusedDataParts, CodingUITools> & {
+  model?: ModelId
   mode?: ModeName
 }

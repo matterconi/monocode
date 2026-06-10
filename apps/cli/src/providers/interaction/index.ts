@@ -1,4 +1,5 @@
 export {
+  useChatStreamInteraction,
   useCommandMenuInteraction,
   useFileReferenceMenuInteraction,
   useInputInteraction,

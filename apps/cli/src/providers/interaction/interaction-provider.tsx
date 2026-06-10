@@ -2,7 +2,7 @@ import type { KeyEvent } from "@opentui/core"
 import { useKeyboard, useRenderer } from "@opentui/react"
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react"
 import type { Command } from "../../types/commands"
-import type { CommandMenuHandle, FileReferenceMenuHandle, InputHandle } from "../../types/interaction"
+import type { ChatStreamHandle, CommandMenuHandle, FileReferenceMenuHandle, InputHandle } from "../../types/interaction"
 import { useDialog } from "../dialog"
 import { useMode } from "../mode"
 import { InteractionContext } from "./interaction-context"
@@ -18,6 +18,7 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
   const inputHandleRef = useRef<InputHandle | null>(null)
   const commandMenuHandleRef = useRef<CommandMenuHandle | null>(null)
   const fileReferenceMenuHandleRef = useRef<FileReferenceMenuHandle | null>(null)
+  const chatStreamHandleRef = useRef<ChatStreamHandle | null>(null)
   const dialogOpenRef = useRef(false)
 
   dialogOpenRef.current = dialog.state.dialogOpen
@@ -38,7 +39,7 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // Global cancel resolves the active layer from top to bottom before falling back to app exit.
-  const cancelTopLayer = useCallback(() => {
+  const cancelTopLayer = useCallback((options?: { includeInput?: boolean }) => {
     if (dialogOpenRef.current) {
       dialog.actions.closeDialog()
       return true
@@ -57,14 +58,23 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
       return true
     }
 
-    const currentInputText = inputHandleRef.current?.getInputText() ?? inputText
-    if (currentInputText.trim()) {
-      clearInput()
-      return true
+    if (options?.includeInput !== false) {
+      const currentInputText = inputHandleRef.current?.getInputText() ?? inputText
+      if (currentInputText.trim()) {
+        clearInput()
+        return true
+      }
     }
 
     return false
   }, [clearInput, dialog.actions, inputText])
+
+  const stopChatStream = useCallback(() => {
+    const chatStreamHandle = chatStreamHandleRef.current
+    if (!chatStreamHandle?.isStreaming()) return false
+    chatStreamHandle.stop()
+    return true
+  }, [])
 
   // Registered handles are narrow imperative bridges owned by their rendering components.
   const registerInputHandle = useCallback((handle: InputHandle) => {
@@ -85,6 +95,13 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
     fileReferenceMenuHandleRef.current = handle
     return () => {
       if (fileReferenceMenuHandleRef.current === handle) fileReferenceMenuHandleRef.current = null
+    }
+  }, [])
+
+  const registerChatStreamHandle = useCallback((handle: ChatStreamHandle) => {
+    chatStreamHandleRef.current = handle
+    return () => {
+      if (chatStreamHandleRef.current === handle) chatStreamHandleRef.current = null
     }
   }, [])
 
@@ -114,6 +131,16 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
     }
 
     if (event.name === "escape") {
+      if (cancelTopLayer({ includeInput: false })) {
+        event.preventDefault()
+        return
+      }
+
+      if (stopChatStream()) {
+        event.preventDefault()
+        return
+      }
+
       if (cancelTopLayer()) event.preventDefault()
       return
     }
@@ -168,6 +195,15 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
     [registerFileReferenceMenuHandle],
   )
 
+  const chatStream = useMemo(
+    () => ({
+      actions: {
+        registerChatStreamHandle,
+      },
+    }),
+    [registerChatStreamHandle],
+  )
+
   const input = useMemo(
     () => ({
       actions: inputActions,
@@ -205,11 +241,13 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
+      chatStream,
       commandMenu,
       fileReferenceMenu,
       input,
     }),
     [
+      chatStream,
       commandMenu,
       fileReferenceMenu,
       input,

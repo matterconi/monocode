@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState, type RefObject } from "react"
 
 interface UseSelectableListOptions {
   getItemId?: (index: number) => string
+  initialIndex?: number
   itemCount: number
   onConfirm?: (index: number) => void
   onSelect?: (index: number) => void
@@ -14,9 +15,17 @@ function clampIndex(index: number, itemCount: number) {
   return Math.max(0, Math.min(index, Math.max(itemCount - 1, 0)))
 }
 
-export function useSelectableList({ getItemId, itemCount, onConfirm, onSelect, resetKey = "", scrollRef }: UseSelectableListOptions) {
-  const [selection, setSelection] = useState({ index: 0, resetKey })
-  const selectedIndex = selection.resetKey === resetKey ? clampIndex(selection.index, itemCount) : 0
+export function useSelectableList({
+  getItemId,
+  initialIndex = 0,
+  itemCount,
+  onConfirm,
+  onSelect,
+  resetKey = "",
+  scrollRef,
+}: UseSelectableListOptions) {
+  const [selection, setSelection] = useState({ index: initialIndex, resetKey })
+  const selectedIndex = selection.resetKey === resetKey ? clampIndex(selection.index, itemCount) : clampIndex(initialIndex, itemCount)
   const hasItems = itemCount > 0
 
   useEffect(() => {

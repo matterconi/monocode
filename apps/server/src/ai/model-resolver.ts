@@ -1,9 +1,12 @@
-import { gateway, streamText } from "ai"
+import { groq } from "@ai-sdk/groq"
+import { streamText } from "ai"
 import { modelDefinitions, type ModelDefinition, type ModelId, type ModelSettingOverrides } from "@matcode/ai"
+import type { GroqLanguageModelOptions } from "@ai-sdk/groq"
 
 type StreamTextOptions = Parameters<typeof streamText>[0]
 type LanguageModelRuntime = {
   model: StreamTextOptions["model"]
+  providerOptions?: StreamTextOptions["providerOptions"]
 }
 
 export class UnsupportedModelSettingError extends Error {
@@ -16,6 +19,27 @@ export class UnsupportedModelSettingError extends Error {
 interface ResolveLanguageModelRuntimeOptions {
   modelId: ModelId
   settings?: ModelSettingOverrides
+}
+
+function toGroqReasoningEffort(reasoningEffort: NonNullable<ModelSettingOverrides["reasoningEffort"]>) {
+  switch (reasoningEffort) {
+    case "none":
+    case "default":
+    case "low":
+    case "medium":
+    case "high":
+      return reasoningEffort satisfies NonNullable<GroqLanguageModelOptions["reasoningEffort"]>
+  }
+}
+
+function resolveGroqProviderOptions(model: ModelDefinition, settings: ModelSettingOverrides): StreamTextOptions["providerOptions"] {
+  if (model.thinking.kind !== "reasoning-effort" || !settings.reasoningEffort) return undefined
+
+  return {
+    groq: {
+      reasoningEffort: toGroqReasoningEffort(settings.reasoningEffort),
+    },
+  }
 }
 
 function resolveModelSettings(model: ModelDefinition, settings: ModelSettingOverrides = {}) {
@@ -32,9 +56,26 @@ function resolveModelSettings(model: ModelDefinition, settings: ModelSettingOver
   return resolved
 }
 
+function resolveProviderOptions(model: ModelDefinition, settings: ModelSettingOverrides): StreamTextOptions["providerOptions"] {
+  switch (model.runtime.provider) {
+    case "groq":
+      return resolveGroqProviderOptions(model, settings)
+  }
+}
+
+function resolveProviderModel(model: ModelDefinition): StreamTextOptions["model"] {
+  switch (model.runtime.provider) {
+    case "groq":
+      return groq(model.runtime.modelId)
+  }
+}
+
 export function resolveLanguageModelRuntime({ modelId, settings }: ResolveLanguageModelRuntimeOptions): LanguageModelRuntime {
   const model = modelDefinitions[modelId]
-  resolveModelSettings(model, settings)
+  const resolvedSettings = resolveModelSettings(model, settings)
+  const providerModel = resolveProviderModel(model)
+  const providerOptions = resolveProviderOptions(model, resolvedSettings)
 
-  return { model: gateway(modelId) }
+  if (!providerOptions) return { model: providerModel }
+  return { model: providerModel, providerOptions }
 }

@@ -1,7 +1,7 @@
 import { app } from "./app"
 
-if (!process.env.AI_GATEWAY_API_KEY) {
-  console.error("Missing AI_GATEWAY_API_KEY")
+if (!process.env.GROQ_API_KEY) {
+  console.error("Missing GROQ_API_KEY")
   process.exit(1)
 }
 

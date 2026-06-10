@@ -10,7 +10,8 @@ export const commands = [
   { name: "/help", description: "Show command help" },
   { name: "/clear", description: "Clear the current view" },
   { name: "/history", description: "Open chat history" },
-  { name: "/model", description: "Select a model" },
+  { name: "/model", description: "Select a model", inputActivationBehavior: "blurAndClear" },
+  { name: "/effort", description: "Select reasoning effort", inputActivationBehavior: "blurAndClear" },
   { name: "/theme", description: "Change theme", inputActivationBehavior: "blurAndClear" },
   { name: "/settings", description: "Open settings" },
 ] satisfies Command[]

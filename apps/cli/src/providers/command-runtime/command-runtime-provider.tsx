@@ -2,6 +2,8 @@ import { useRenderer } from "@opentui/react"
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react"
 import { useNavigate } from "react-router"
 import { commands } from "../../commands/commands"
+import { EffortDialog } from "../../components/dialogs/effort-dialog"
+import { ModelDialog } from "../../components/dialogs/model-dialog"
 import { SessionsDialog } from "../../components/dialogs/sessions-dialog"
 import { ThemeDialog } from "../../components/dialogs/theme-dialog"
 import { isAccessTokenExpired, isAccessTokenExpiring } from "../../lib/auth/token-expiry"
@@ -94,10 +96,15 @@ export function CommandRuntimeProvider({ children }: { children: ReactNode }) {
         case "/theme":
           dialog.actions.openDialog(<ThemeDialog />)
           return
+        case "/model":
+          dialog.actions.openDialog(<ModelDialog />)
+          return
+        case "/effort":
+          dialog.actions.openDialog(<EffortDialog />)
+          return
         case "/help":
         case "/clear":
         case "/history":
-        case "/model":
         case "/settings":
           toast.actions.info("This command is not implemented yet.", { title: command.name })
           return

@@ -1,4 +1,4 @@
 import type { ModelId } from "./types"
 
-export const defaultCodingModelId: ModelId = "deepseek/deepseek-v3.1-terminus"
-export const defaultTitleModelId: ModelId = "deepseek/deepseek-v3.1-terminus"
+export const defaultCodingModelId: ModelId = "openai/gpt-oss-120b"
+export const defaultTitleModelId: ModelId = "llama-3.1-8b-instant"

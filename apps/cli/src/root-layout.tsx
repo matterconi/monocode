@@ -19,7 +19,6 @@ export function RootLayout() {
     for (const r of ROUTES) {
       if (e.name === r.key) navigate(r.path)
     }
-    if (e.name === "q") renderer.destroy()
   })
 
   return (
@@ -53,7 +52,6 @@ export function RootLayout() {
                         [{r.key}] {r.label}
                       </text>
                     ))}
-                    <text attributes={TextAttributes.DIM}>[q] Quit</text>
                   </box>
                 </box>
               </CommandRuntimeProvider>

@@ -661,3 +661,190 @@ In progress — scaffolding
 - Testati tutti i modelli attualmente nel registry contro la key Gateway free-tier: rimossi i modelli paid-only con 403 (`deepseek/deepseek-v4-flash`, `openai/gpt-5.5`, `google/gemini-3.1-flash-lite`). I 429 sono stati trattati come free-tier rate limit, non come paid-only.
 - Default coding/title aggiornati a `deepseek/deepseek-v3.1-terminus`, che ha risposto correttamente con la key attuale durante il test.
 - Registry Gateway ristretto ulteriormente ai soli modelli che hanno risposto `OK` durante il test con la key attuale (`deepseek/deepseek-v3.2-thinking`, `deepseek/deepseek-v3.1-terminus`), escludendo anche i modelli free-tier ma temporaneamente rate-limited con 429 per rendere il test locale più prevedibile.
+
+## Completed (sessione corrente — model command)
+
+- `/model` collegato al runtime comandi: ora usa `inputActivationBehavior: "blurAndClear"` e apre `ModelDialog` invece del toast placeholder.
+- `ModelDialog` aggiunto: dialog con searchbar focused, filtro locale su `modelOrder`/`modelDefinitions`, lista selezionabile con hover/frecce/Enter/click e marker `active` sul modello corrente.
+- La selezione modello chiama `AgentProvider.selectModel(modelId)`, chiude il dialog e resta runtime-only; le richieste successive usano il nuovo `modelId` tramite `useSessionChat`.
+- Build CLI entry passa (`bun build apps/cli/src/index.tsx --target bun ...`); typecheck server passa; typecheck CLI resta fallito solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` resta sui preesistenti tracciati.
+
+## Completed (sessione corrente — Gateway free-tier model audit)
+
+- Endpoint `https://ai-gateway.vercel.sh/v1/models` interrogato: tutti gli ID della shortlist richiesta esistono nel catalogo Gateway.
+- Test minimale con `generateText({ model: gateway(id), prompt: "Reply OK.", maxOutputTokens: 16 })` eseguito da `apps/server`, dove `AI_GATEWAY_API_KEY` è disponibile.
+- Semantica Gateway confermata: `403 Free tier users do not have access to this model` indica paid-only ed esclusione; `429 Free tier requests on this model are rate-limited` indica modello free-tier temporaneamente rate-limited e resta includibile.
+- `google/gemini-3.1-flash-lite` escluso perché ha risposto `403 Free tier users do not have access to this model`.
+- Registry modelli riallargato includendo modelli `OK` e modelli `429` free-tier/rate-limited, mantenendo massimo 2-3 modelli per provider/company; default coding/title mantenuti su `deepseek/deepseek-v3.1-terminus`, che ha risposto `OK`.
+- `architecture.md` aggiornato con la regola registry per errori Gateway `429` vs `403`.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati.
+
+## Completed (sessione corrente — active chat model switching)
+
+- Root cause del cambio modello in chat attiva: `useChat` crea il `Chat`/transport una volta per sessione; il body di default del transport non era sufficiente come garanzia esplicita per gli invii successivi dopo una selezione modello runtime.
+- `useSessionChat` ora centralizza `getChatRequestBody()` e passa `{ mode, model }` anche nelle options di ogni `sendMessage()`, sia per `initialPrompt` sia per submit manuali, così il modello selezionato al momento dell'invio sovrascrive sempre il body base del transport.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati.
+
+## Completed (sessione corrente — CLI quit shortcut)
+
+- Keybind globale `q` rimosso da `RootLayout`: l'uscita resta affidata a `/exit` e alla policy `Ctrl+C` gestita dall'interaction layer, evitando chiusure accidentali digitando `q`.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati.
+
+## Completed (sessione corrente — model identity prompt)
+
+- `createCodingAgentStream()` ora riceve anche `modelId`, recupera `modelDefinitions[modelId]` e aggiunge al system prompt l'obbligo di iniziare ogni messaggio con `Model: <id> (<provider>).`.
+- `POST /sessions/:sessionId/messages` passa il modello validato all'agent insieme al provider runtime risolto, così il prompt riflette la selezione `/model` corrente.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati.
+
+## Completed (sessione corrente — model identity UI fix)
+
+- Superato il precedente approccio `model identity prompt`: il server non chiede più all'LLM di scrivere `Model: ...`, perché dopo switch multipli il modello può copiare o allucinare righe modello dalla cronologia.
+- `CodingUIMessage` e `storedCodingMessageSchema` includono ora `model`, quindi i messaggi persistiti conservano e idratano il modello server-authoritative salvato su Prisma.
+- `MessageList`/`ChatMessage` renderizzano la riga `Model: <id> (<provider>)` dalla UI usando `message.model` o il modello pending del submit corrente, non testo generato dall'assistant.
+- `useSessionChat` traccia anche i modelli pending accanto alle mode pending, così i messaggi live mostrano il modello scelto al momento del submit prima che vengano riletti dal DB.
+- `ModelDialog` inizializza la selezione sulla riga del modello attivo invece che sulla prima riga filtrata, evitando switch involontari quando si preme Enter senza muovere la selezione.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati.
+- Build runtime CLI passata con `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-model-fix-check`.
+
+## Completed (sessione corrente — Esc stops chat stream)
+
+- `InteractionProvider` espone una capability registrabile per lo stream chat (`isStreaming`, `stop`) e gestisce `Esc` con priorità: dialog/menu, stop dello stream LLM attivo, poi clear dell'input.
+- `useSessionChat` registra lo `stop` restituito da `useChat` e considera streaming sia `submitted` sia `streaming`, così premere `Esc` interrompe la conversazione in corso e sblocca l'invio di un nuovo messaggio.
+- `useSessionChat` ora marca localmente lo stream come fermato quando `Esc` chiama `stop()`, quindi `disabled` torna subito `false` e il placeholder dell'input passa immediatamente da `Waiting...` a `Message Monocode...`.
+- In caso di errore provider/AI SDK, `useSessionChat.onError()` marca lo stream come fermato e `disabled` dipende solo dallo streaming attivo, quindi l'input non resta più bloccato su `Waiting...` dopo un errore.
+- `useSessionChat` chiama `clearError()` quando cambia il modello selezionato e prima di ogni nuovo submit, così lo stato `error` interno di `useChat` non blocca più una richiesta successiva dopo aver cambiato modello.
+- `architecture.md` aggiornato con la nuova capability chat-stream nell'interaction layer.
+- Build runtime CLI passata con `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-cli-esc-stop-check`; `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati.
+
+## Completed (sessione corrente — provider error rollback)
+
+- Root cause confermata: `useChat.sendMessage()` aggiunge il messaggio user allo stato locale prima della request; `clearError()` sblocca solo `status/error` e non rimuove messaggi ottimistici rimasti senza assistant.
+- `useSessionChat` ora salva uno snapshot della history prima del submit e in `onError()` ripristina `messages`, rimuove il pending mode/model del submit fallito e mostra un toast `Chat request failed` con il messaggio provider/gateway.
+- Il cambio modello mantiene `clearError()` ma non marca più artificialmente lo stream come fermato e non elimina lo snapshot rollback se una request è ancora attiva, evitando di mascherare o rendere non recuperabile uno stream in corso.
+- `POST /sessions/:sessionId/messages` persiste user e assistant solo dopo `streamText()` completato e li scrive insieme a eventuale titolo in `db.$transaction()`, evitando turni DB parziali se una write fallisce.
+- La generazione titolo della prima chat non parte più prima dello stream assistant; viene tentata solo in `onFinish` e un suo errore non impedisce la persistenza del turno chat completato.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; build CLI passa con `bun build apps/cli/src/index.tsx --target bun --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-chat-error-check`.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+
+## Completed (sessione corrente — Groq Cloud provider)
+
+- Provider server migrato da Vercel AI Gateway a Groq Cloud: `model-resolver.ts` ora importa `groq` da `@ai-sdk/groq` e risolve ogni `ModelId` con `groq(modelId)`.
+- `@ai-sdk/groq` aggiunto alle dipendenze di `@monocode/server`; il server ora richiede `GROQ_API_KEY` invece di `AI_GATEWAY_API_KEY` all'avvio.
+- Registry modelli condiviso ristretto a id Groq Cloud supportati dal provider SDK locale: GPT OSS, Kimi K2, Qwen3, DeepSeek R1 Distill, Llama e Gemma.
+- Default coding aggiornato a `openai/gpt-oss-120b`; default title aggiornato a `llama-3.1-8b-instant`.
+- `.env.example` aggiornato con `GROQ_API_KEY`; la chiave reale resta in env locale ignorata da git, non nei file tracciati.
+- `bun install --ignore-scripts --frozen-lockfile` passa dopo l'aggiunta provider; `bunx tsc --noEmit -p apps/server/tsconfig.json` passa.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati.
+- Check live del catalogo Groq fallito per restrizione di rete dall'ambiente, quindi il registry è stato riallineato ai modelli testuali attualmente esposti nella docs page pubblica Groq (`openai/gpt-oss-*`, `llama-*`, `meta-llama/*`, `qwen/qwen3-32b`) invece che agli id Gateway vecchi.
+- Test live `generateText()` eseguito con la key locale del server: `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `meta-llama/llama-4-scout-17b-16e-instruct` e `qwen/qwen3-32b` hanno tutti risposto correttamente.
+
+## Completed (sessione corrente — model thinking registry)
+
+- Registry modelli esteso con capability descrittiva `thinking`: `reasoning-effort` per `openai/gpt-oss-*`, `inline-tags` non toggleable per `qwen/qwen3-32b`, `none` per i modelli Llama testati.
+- `settings.reasoningEffort` dichiarato solo sui modelli `openai/gpt-oss-*`, con options Groq supportate (`auto`, `low`, `medium`, `high`) e helper condivisi `canToggleThinking()` / `supportsReasoningEffort()` derivati dal registry.
+- Resolver server aggiornato per restituire `providerOptions.groq.reasoningEffort` solo quando il modello dichiara `thinking.mode: "reasoning-effort"`; `auto` viene mappato al valore Groq `default` e `extra-high` resta non dichiarato per i modelli Groq compatibili.
+- Toggle thinking CLI collegato al registry: `InputStatus` mostra `thinking on/off` solo per modelli toggleable, `AgentProvider` invia `reasoningEffort: "auto"` quando attivo e `"none"` quando disattivo, mentre i modelli non compatibili non inviano `modelSettings`.
+- `architecture.md` aggiornato: il registry modelli è source of truth anche per capability thinking; il server mappa gli override Groq solo per modelli compatibili.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo il registry thinking e la mappatura providerOptions; `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+
+## Completed (sessione corrente — scalable thinking registry)
+
+- Registry modelli rifattorizzato per separare metadata user-facing (`providerLabel`) da runtime provider (`runtime.provider`, `runtime.modelId`), mantenendo Groq come unico provider runtime attuale.
+- Capability thinking rinominata semanticamente da `thinking.mode` a `thinking.kind`, evitando conflitto concettuale con le mode build/plan dei tool.
+- Il registry resta source of truth: i modelli toggleable dichiarano `settings.reasoningEffort.default/options`; la CLI mostra il toggle solo da `thinking.toggleable`, invia il default dichiarato quando ON e omette `modelSettings.reasoningEffort` quando OFF.
+- Resolver server spostato su adapter runtime: switch su `model.runtime.provider`, risoluzione `groq(model.runtime.modelId)` e conversione `providerOptions.groq.reasoningEffort` confinata al ramo Groq.
+- L'adapter Groq accetta solo `low`, `medium` o `high`; valori non supportati vengono convertiti in errore controllato `UnsupportedModelSettingError` e quindi in risposta 400 dalla route.
+- `architecture.md` aggiornato con la decisione: il registry dichiara cosa il runtime deve fare, il provider adapter traduce senza decidere capability o UI.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo il refactor runtime/thinking.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto, issue già tracciata.
+- `bun run check` fallisce ancora sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+
+## Completed (sessione corrente — omit absent model settings)
+
+- Fix errore Groq su Llama 3.3 70B: i campi opzionali assenti non vengono più passati come chiavi con valore `undefined`.
+- `useSessionChat.getChatRequestBody()` ora omette `modelSettings` quando non ci sono override attivi, invece di inviare `modelSettings: undefined`.
+- `resolveLanguageModelRuntime()`, `sessions.ts` e `createCodingAgentStream()` omettono fisicamente `providerOptions` quando il registry/resolver non ne produce, evitando che `streamText()` o il provider vedano una key reasoning per modelli non compatibili.
+- `modelSettingOverridesSchema` reso `.strict()`: il boundary HTTP accetta solo chiavi setting note, mentre la compatibilità per-modello resta validata dal resolver contro `model.settings`.
+
+## Completed (sessione corrente — reasoning history compatibility)
+
+- Root cause ulteriore per Llama 3.3 70B: dopo uno switch da modelli GPT OSS con thinking, la history può contenere parti assistant `reasoning`; anche senza `reasoningEffort`, quelle parti possono far rifiutare la request a modelli senza supporto reasoning.
+- `createCodingAgentStream()` ora riceve anche il `modelId` selezionato e usa `modelDefinitions[modelId].thinking.kind` per preparare la history prima di `convertToModelMessages()`.
+- Per modelli con `thinking.kind !== "reasoning-effort"`, le parti `reasoning` vengono filtrate solo dal payload verso il modello runtime; DB e UI restano invariati e continuano a mostrare la reasoning history già salvata.
+- `POST /sessions/:sessionId/messages` passa il `modelId` validato all'agent shared insieme al provider model risolto.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa dopo il filtro history reasoning.
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto, issue già tracciata.
+- `bun run check` fallisce ancora sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+
+## Completed (sessione corrente — reasoning effort command)
+
+- Verificata la docs Groq Reasoning: `qwen/qwen3-32b` supporta `reasoning_effort: "none" | "default"`, mentre GPT OSS supporta solo `"low" | "medium" | "high"`.
+- `reasoningEffortSchema` aggiornato a `"none" | "default" | "low" | "medium" | "high"`; il registry dichiara Qwen come `thinking.kind: "reasoning-effort"`, toggleable, con default `"default"` e option `"none"` per disabilitare reasoning.
+- `AgentProvider` ora mantiene uno stato `reasoningEffort` selezionabile: quando si cambia modello, se l'effort corrente non è supportato dal nuovo modello viene sostituito con il default dichiarato nel registry.
+- Per modelli con option `"none"` dichiarata, `thinking off` invia `reasoningEffort: "none"`; per modelli senza disable esplicito, come GPT OSS, il payload continua a omettere l'effort quando il toggle è off.
+- Lo stato agent distingue effort selezionato da effort runtime attivo: `/effort` evidenzia la selezione utente, mentre la barra mostra l'effort effettivamente inviato nel payload corrente.
+- Aggiunto comando `/effort` con `EffortDialog`: la lista deriva da `modelDefinition.settings.reasoningEffort.options`, non hardcoda valori provider, e mostra empty-state se il modello corrente non ha effort configurabile.
+- `InputStatus` mostra `effort <value>` accanto al toggle thinking per i modelli toggleable; `InputHints` include `/effort`.
+- Resolver Groq aggiornato per accettare anche `none` e `default` quando il registry li dichiara per il modello selezionato; la validazione per-modello resta in `resolveModelSettings()`.
+- `bunx --bun tsc --noEmit -p apps/server/tsconfig.json` passa dopo il comando effort.
+- `bunx --bun tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto, issue già tracciata.
+- `bun run check` fallisce ancora sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+
+## Completed (sessione corrente — ai-resume-pdf KV migration)
+
+- Schema `ai_resume_resumes` aggiunto in `app/lib/schema.ts` con campi `id`, `userId`, `companyName`, `jobTitle`, `jobDescription`, `resumeFileId`, `imageFileId`, `feedback`, `createdAt`, `updatedAt`.
+- API routes `app/routes/api/resumes.ts` (GET lista, POST crea, DELETE wipe) e `app/routes/api/resumes.$id.ts` (GET singolo, DELETE singolo) create con protezione auth via `auth.api.getSession()` e scoping per `userId`.
+- Frontend `upload.tsx` aggiornato: dopo upload PDF/immagine e feedback AI, invia `POST /api/resumes` con JSON del resume (id, fileIds, company, job, feedback parsato).
+- Frontend `home.tsx` aggiornato: sostituisce `kv.list("resume:*")` con `fetch('/api/resumes')` e parse JSON del campo `feedback`.
+- Frontend `resume.tsx` aggiornato: sostituisce `kv.get()` con `fetch('/api/resumes/:id')` e usa `fs.read()` per caricare i blob PDF/immagine dai fileId.
+- Frontend `wipe.tsx` aggiornato: sostituisce `kv.flush()` con `fetch('/api/resumes', { method: 'DELETE' })`.
+- Store `app/lib/puter.ts` aggiornato: rimosso il metodo `kv` (get/set/list/flush); `fs` e `ai` restano invariati.
+- Tipi `app/types/index.d.ts` e mock `constants/index.ts` aggiornati: `Resume` usa `imageFileId`/`resumeFileId` invece di `imageFile`/`resumePath`.
+- Componente `app/components/ResumeCard.tsx` aggiornato: usa `imageFileId` per caricare l'anteprima dal filesystem API.
+- Script `scripts/migrate-kv.ts` eseguito con `bun run`: tabella `ai_resume_resumes` creata sul database PostgreSQL condiviso (stesso `DATABASE_URL` del workspace root).
+- Migrazione KV da Puter.js a PostgreSQL completata per il progetto `ai-resume-pdf`.
+
+## Completed (sessione corrente — ai-resume-pdf KV migration)
+
+- Schema `ai_resume_resumes` aggiunto in `app/lib/schema.ts` con campi `id`, `userId`, `companyName`, `jobTitle`, `jobDescription`, `resumeFileId`, `imageFileId`, `feedback`, `createdAt`, `updatedAt`.
+- API routes `app/routes/api/resumes.ts` (GET lista, POST crea, DELETE wipe) e `app/routes/api/resumes.$id.ts` (GET singolo, DELETE singolo) create con protezione auth via `auth.api.getSession()` e scoping per `userId`.
+- Frontend `upload.tsx` aggiornato: dopo upload PDF/immagine e feedback AI, invia `POST /api/resumes` con JSON del resume (id, fileIds, company, job, feedback parsato).
+- Frontend `home.tsx` aggiornato: sostituisce `kv.list("resume:*")` con `fetch('/api/resumes')` e parse JSON del campo `feedback`.
+- Frontend `resume.tsx` aggiornato: sostituisce `kv.get()` con `fetch('/api/resumes/:id')` e usa `fs.read()` per caricare i blob PDF/immagine dai fileId.
+- Frontend `wipe.tsx` aggiornato: sostituisce `kv.flush()` con `fetch('/api/resumes', { method: 'DELETE' })`.
+- Store `app/lib/puter.ts` aggiornato: rimosso il metodo `kv` (get/set/list/flush); `fs` e `ai` restano invariati.
+- Tipi `app/types/index.d.ts` e mock `constants/index.ts` aggiornati: `Resume` usa `imageFileId`/`resumeFileId` invece di `imageFile`/`resumePath`.
+- Componente `app/components/ResumeCard.tsx` aggiornato: usa `imageFileId` per caricare l'anteprima dal filesystem API.
+- Script `scripts/migrate-kv.ts` eseguito con `bun run`: tabella `ai_resume_resumes` creata sul database PostgreSQL condiviso (stesso `DATABASE_URL` del workspace root).
+- Migrazione KV da Puter.js a PostgreSQL completata per il progetto `ai-resume-pdf`.
+
+## Completed (sessione corrente — ai-resume-pdf AI migration Puter → DeepSeek)
+
+- `app/lib/pdf2img.ts` aggiornato: aggiunta `extractTextFromPdf(file)` che usa `pdfjs-dist` (già installato) per estrarre il testo da tutte le pagine del PDF lato client.
+- `app/routes/api/analyze.ts` creata: nuova API route `POST /api/analyze` protetta da `auth.api.getSession()`, riceve `{ resumeText, jobTitle, jobDescription, companyName }`, costruisce il prompt completo con il formato `Feedback` e chiama DeepSeek API (`https://api.deepseek.com/v1/chat/completions`) con `model: "deepseek-chat"`, `response_format: { type: "json_object" }`, `max_tokens: 4000`, `temperature: 0.7`.
+- `app/routes/upload.tsx` aggiornato: sostituisce `ai.feedback(uploadedFile.path, instructions)` con il nuovo flusso:
+  1. Upload PDF e conversione immagine (invariati)
+  2. Estrazione testo con `extractTextFromPdf(file)`
+  3. `POST /api/analyze` con il testo del resume e i dati del job
+  4. Parse JSON della risposta DeepSeek e salvataggio via `POST /api/resumes` (invariato)
+- `app/lib/puter.ts` aggiornato: rimossi `ai` (chat, feedback, img2txt), `getPuter()` e le dichiarazioni globali `window.puter`; lo store Zustand mantiene solo `fs` e `init`/`clearError`.
+- `app/types/puter.d.ts` aggiornato: rimossi tipi inutilizzati `ChatMessageContent`, `ChatMessage`, `PuterChatOptions`, `AIResponse`.
+- `.env` aggiornato: aggiunta `DEEPSEEK_API_KEY=<redacted>`.
+- `bun run typecheck` rieseguito: nessun errore introdotto dalle modifiche; gli errori rimanenti sono preesistenti nelle route `api/files.ts`, `api/files.$id.ts` e `api/auth.$.ts` già tracciati.
+- Migrazione AI da Puter.js (`puter.ai.chat`) a DeepSeek API completata per il progetto `ai-resume-pdf`.
+
+## Completed (sessione corrente — ai-resume-pdf auth redirect)
+
+- `app/routes/upload.tsx` aggiornato: aggiunto `useAuth` hook per verificare autenticazione lato client.
+- Aggiunto `useEffect` che reindirizza a `/auth?next=/upload` con `replace: true` quando `isAuthLoading` è `false` e `isAuthenticated` è `false`.
+- Questo protegge la route `/upload` lato client, allineandola con la protezione auth già presente sul backend (`/api/analyze` richiede sessione via `auth.api.getSession()`).
+- Il redirect preserva il parametro `next=/upload` così il login può tornare alla pagina di upload dopo l'autenticazione.
+
+## Completed (sessione corrente — ai-resume-pdf auth + limiti)
+
+- `app/routes/api/resumes.ts`: fix import mancante `sql` e `desc` da `drizzle-orm`; ordinamento lista resume per `createdAt` decrescente (`desc(resumes.createdAt)`).
+- `app/routes/upload.tsx`: aggiunto `loader` con `redirect` a `/auth` se non autenticato e `resumeCount` dal DB; form nascosto e messaggio limite raggiunto quando `resumeCount >= 3`.
+- `app/routes/home.tsx`: link "Upload New Resume" nascosto quando `resumes.length >= 3`; messaggio "You have reached the limit of 3 reviews." aggiunto sotto la lista.
+- `app/routes/resume.tsx`: aggiunto `loader` con `redirect` a `/auth` se non autenticato e `resumeData` dal DB; feedback idratato immediatamente dal server, evitando flash del form.
+- `bun run typecheck` rieseguito: nessun nuovo errore introdotto; gli errori rimanenti sono preesistenti nelle route `api/files.ts`, `api/files.$id.ts` e `api/auth.$.ts` già tracciati.

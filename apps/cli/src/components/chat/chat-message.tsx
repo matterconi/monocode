@@ -1,5 +1,5 @@
 import { isTextUIPart, isReasoningUIPart, isToolUIPart, type UIMessage } from "ai"
-import type { CodingUIMessage, ModeName } from "@matcode/ai"
+import { modelDefinitions, type CodingUIMessage, type ModeName, type ModelId } from "@matcode/ai"
 import { ChatPanel } from "./chat-panel"
 import { PartText } from "./part-text"
 import { PartReasoning } from "./part-reasoning"
@@ -8,13 +8,16 @@ import { useTheme } from "../../providers/theme"
 
 interface ChatMessageProps {
   fallbackMode?: ModeName
+  fallbackModel?: ModelId
   message: UIMessage | CodingUIMessage
 }
 
-export function ChatMessage({ fallbackMode = "build", message }: ChatMessageProps) {
+export function ChatMessage({ fallbackMode = "build", fallbackModel, message }: ChatMessageProps) {
   const isUser = message.role === "user"
   const { theme } = useTheme()
   const messageMode = "mode" in message && message.mode ? message.mode : fallbackMode
+  const messageModel = "model" in message && message.model ? message.model : fallbackModel
+  const modelDefinition = messageModel ? modelDefinitions[messageModel] : undefined
 
   if (isUser) {
     return (
@@ -26,6 +29,13 @@ export function ChatMessage({ fallbackMode = "build", message }: ChatMessageProp
 
   return (
     <box flexDirection="column" flexShrink={0}>
+      {modelDefinition ? (
+        <box paddingLeft={2} flexShrink={0}>
+          <text fg={theme.colors.textSoft}>
+            Model: {modelDefinition.id} <span fg={theme.colors.dim}>({modelDefinition.providerLabel})</span>
+          </text>
+        </box>
+      ) : null}
       {message.parts.map((part, i) => {
         if (isTextUIPart(part)) {
           return (

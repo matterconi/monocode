@@ -11,14 +11,14 @@ export function ChatScreen() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const { state } = useLocation()
   const { prompt } = ChatState.parse(state ?? {})
-  const { messages, messageModes, isStreaming, disabled, submitMessage } = useSessionChat({
+  const { messages, messageModes, messageModels, isStreaming, disabled, submitMessage } = useSessionChat({
     sessionId: sessionId!,
     initialPrompt: prompt,
   })
 
   return (
     <box flexDirection="column" flexGrow={1}>
-      <MessageList messages={messages} messageModes={messageModes} isStreaming={isStreaming} />
+      <MessageList messages={messages} messageModes={messageModes} messageModels={messageModels} isStreaming={isStreaming} />
       <InputSurface
         clearOnSubmit
         disabled={disabled}

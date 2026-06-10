@@ -9,6 +9,7 @@ export type CommandName =
   | "/clear"
   | "/history"
   | "/model"
+  | "/effort"
   | "/theme"
   | "/settings"
 

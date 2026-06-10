@@ -20,3 +20,7 @@ export function useCommandMenuInteraction() {
 export function useFileReferenceMenuInteraction() {
   return useInteraction().fileReferenceMenu
 }
+
+export function useChatStreamInteraction() {
+  return useInteraction().chatStream
+}

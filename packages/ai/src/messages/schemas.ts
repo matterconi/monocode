@@ -34,6 +34,7 @@ export const storedCodingMessageSchema = z
   .looseObject({
     id: z.string(),
     role: z.enum(["system", "user", "assistant"]),
+    model: modelSchema.default(defaultCodingModelId),
     mode: modeSchema.default("build"),
     parts: z.custom<CodingUIMessage["parts"]>((value) => Array.isArray(value)),
   })
@@ -41,6 +42,7 @@ export const storedCodingMessageSchema = z
     (message): CodingUIMessage => ({
       id: message.id,
       role: message.role,
+      model: message.model,
       mode: message.mode,
       parts: message.parts,
     }),

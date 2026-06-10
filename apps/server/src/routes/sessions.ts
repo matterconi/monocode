@@ -97,7 +97,7 @@ export const sessions = new Hono<ClerkAuthEnv>()
       if (!session) return c.json({ message: "Not Found" }, 404)
 
       const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")
-      let titlePromise: Promise<string> | undefined
+      let titlePromptText: string | undefined
       if (lastUserMsg) {
         const existingUserMessage = await db.message.findUnique({
           where: { id: lastUserMsg.id },
@@ -109,22 +109,8 @@ export const sessions = new Hono<ClerkAuthEnv>()
 
         const existingMessageCount = await db.message.count({ where: { sessionId } })
         if (existingMessageCount === 0) {
-          const promptText = getTextFromMessageParts(lastUserMsg.parts)
-          titlePromise = generateSessionTitle(promptText)
+          titlePromptText = getTextFromMessageParts(lastUserMsg.parts)
         }
-
-        await db.message.upsert({
-          where: { id: lastUserMsg.id },
-          update: { mode },
-          create: {
-            id: lastUserMsg.id,
-            sessionId,
-            role: "user",
-            mode,
-            model,
-            parts: storedMessagePartsSchema.parse(lastUserMsg.parts),
-          },
-        })
       }
 
       let runtime: ReturnType<typeof resolveLanguageModelRuntime>
@@ -139,32 +125,54 @@ export const sessions = new Hono<ClerkAuthEnv>()
         messages,
         mode,
         model: runtime.model,
+        modelId: model,
+        ...(runtime.providerOptions ? { providerOptions: runtime.providerOptions } : {}),
         onFinish: async ({ text, reasoningText, usage }) => {
-          if (titlePromise) {
-            await db.session.update({
-              where: { id: sessionId },
-              data: { title: await titlePromise },
-            })
-          }
-
+          const userParts = lastUserMsg ? storedMessagePartsSchema.parse(lastUserMsg.parts) : undefined
+          const title = titlePromptText ? await generateSessionTitle(titlePromptText).catch(() => undefined) : undefined
           const parts: Prisma.InputJsonArray = [
             ...(reasoningText ? [{ type: "reasoning", text: reasoningText }] : []),
             ...(text ? [{ type: "text", text }] : []),
           ]
-          await db.message.create({
-            data: {
-              id: crypto.randomUUID(),
-              sessionId,
-              role: "assistant",
-              mode,
-              model,
-              parts,
-              metadata: {
-                promptTokens: usage.inputTokens ?? 0,
-                completionTokens: usage.outputTokens ?? 0,
-                totalTokens: usage.totalTokens ?? 0,
+
+          await db.$transaction(async (tx) => {
+            if (lastUserMsg && userParts) {
+              await tx.message.upsert({
+                where: { id: lastUserMsg.id },
+                update: { mode },
+                create: {
+                  id: lastUserMsg.id,
+                  sessionId,
+                  role: "user",
+                  mode,
+                  model,
+                  parts: userParts,
+                },
+              })
+            }
+
+            if (title) {
+              await tx.session.update({
+                where: { id: sessionId },
+                data: { title },
+              })
+            }
+
+            await tx.message.create({
+              data: {
+                id: crypto.randomUUID(),
+                sessionId,
+                role: "assistant",
+                mode,
+                model,
+                parts,
+                metadata: {
+                  promptTokens: usage.inputTokens ?? 0,
+                  completionTokens: usage.outputTokens ?? 0,
+                  totalTokens: usage.totalTokens ?? 0,
+                },
               },
-            },
+            })
           })
         },
       })

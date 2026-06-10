@@ -20,6 +20,11 @@ export interface FileReferenceMenuHandle {
   isOpen: () => boolean
 }
 
+export interface ChatStreamHandle {
+  isStreaming: () => boolean
+  stop: () => void
+}
+
 export interface InputInteraction {
   actions: {
     blurInput: () => void
@@ -61,7 +66,14 @@ export interface FileReferenceMenuInteraction {
   }
 }
 
+export interface ChatStreamInteraction {
+  actions: {
+    registerChatStreamHandle: (handle: ChatStreamHandle) => () => void
+  }
+}
+
 export interface InteractionContextValue {
+  chatStream: ChatStreamInteraction
   commandMenu: CommandMenuInteraction
   fileReferenceMenu: FileReferenceMenuInteraction
   input: InputInteraction
