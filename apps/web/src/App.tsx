@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Camera, Copy, Link2, MessageCircle } from "lucide-react";
+import { ArrowRight, Copy } from "lucide-react";
 import Hls from "hls.js";
 import { motion, useScroll, useTransform } from "framer-motion";
 import type { MotionValue } from "framer-motion";
@@ -21,8 +21,6 @@ const solutionVideo =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4";
 const ctaHlsVideo = "https://stream.mux.com/8wrHPCX2dC3msyYU9ObwqNdm00u3ViXvOSHUMRYSEe5Q.m3u8";
 const installCommand = "bunx @monocode/cli";
-
-const navLinks = ["Home", "How It Works", "Philosophy", "Use Cases"];
 
 const platformCards = [
   {
@@ -69,6 +67,14 @@ function Mark({ className = "" }: { className?: string }) {
   );
 }
 
+function GitHubIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.56v-2.15c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.75 2.69 1.24 3.35.95.1-.74.4-1.24.73-1.53-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18A10.9 10.9 0 0 1 12 6.05c.98.01 1.96.13 2.88.39 2.2-1.49 3.16-1.18 3.16-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.13v3.17c0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z" />
+    </svg>
+  );
+}
+
 function Navbar() {
   return (
     <header className="fixed top-0 z-50 flex w-full items-center justify-between px-8 py-4 md:px-28">
@@ -77,23 +83,25 @@ function Navbar() {
         <span className="text-base font-bold tracking-[-0.02em]">Monocode</span>
       </a>
 
-      <nav className="hidden items-center gap-3 text-sm md:flex" aria-label="Primary navigation">
-        {navLinks.map((link, index) => (
-          <span key={link} className="flex items-center gap-3">
-            <a href={`#${link.toLowerCase().replaceAll(" ", "-")}`} className="text-muted-foreground transition-colors hover:text-foreground">
-              {link}
-            </a>
-            {index < navLinks.length - 1 ? <span className="text-muted-foreground/50">•</span> : null}
-          </span>
-        ))}
-      </nav>
-
-      <div className="flex items-center gap-2">
-        {[Camera, Link2, MessageCircle].map((Icon, index) => (
-          <a key={index} href="#" className="liquid-glass grid h-10 w-10 place-items-center rounded-full" aria-label="Social link">
-            <Icon className="h-4 w-4" />
-          </a>
-        ))}
+      <div className="flex items-center gap-3">
+        <a
+          href="https://github.com/matterconi/monocode"
+          className="liquid-glass grid h-10 w-10 place-items-center rounded-full"
+          aria-label="Monocode GitHub repository"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <GitHubIcon className="h-4 w-4" />
+        </a>
+        <a
+          href="https://github.com/matterconi/monocode"
+          className="hidden items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Docs
+          <ArrowRight className="h-4 w-4" />
+        </a>
       </div>
     </header>
   );
@@ -306,10 +314,7 @@ function CtaSection() {
         <motion.p {...fadeUp(0.16)} className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
           Bring Monocode into the workspace where your code, context, and decisions already live.
         </motion.p>
-        <motion.div {...fadeUp(0.24)} className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Button>Install CLI</Button>
-          <Button variant="glass">Read the Workflow</Button>
-        </motion.div>
+        <HeroCtas />
       </div>
     </section>
   );

@@ -947,6 +947,7 @@ In progress — scaffolding
 - Dipendenze web aggiornate: aggiunti `framer-motion`, `hls.js`, `@fontsource/inter`, `@fontsource/instrument-serif`, `tailwindcss-animate`; rimosso `motion` non più usato.
 - Design system web aggiornato in `index.css` con variabili HSL richieste, font Inter/Instrument Serif locali, classe globale `.liquid-glass` e plugin `tailwindcss-animate` per Tailwind CSS 4.
 - Componenti shadcn-style minimali aggiunti per `Button` e utility `cn`; il form email della hero è stato sostituito da due CTA: comando install copiabile `bunx @monocode/cli` e link Docs verso GitHub.
+- Navbar resa minimale: logo Monocode a sinistra, icona GitHub progetto e link Docs a destra; rimossi i link alle sezioni dalla navbar. La CTA finale ora riusa le stesse azioni install copiabile + Docs della hero.
 - Asset PNG mancanti nel repo sostituiti con avatar/icon geometrici CSS inline per evitare 404 mantenendo il tema pure black/white.
 - `bun run --cwd apps/web build` passa dopo la landing e dopo il cambio CTA; resta solo warning Vite sulla dimensione chunk JS.
 - `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
