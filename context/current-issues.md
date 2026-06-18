@@ -135,7 +135,7 @@
 
 ---
 
-## [OPEN] ai-resume-pdf typecheck fails on pre-existing files
+## [MOVED OUT] ai-resume-pdf typecheck fails on pre-existing files
 
 **Package:** `ai-resume-pdf`
 **Files:** `app/routes/api/auth.$.ts`, `app/routes/api/files.ts`, `app/routes/api/files.$id.ts`
@@ -144,11 +144,11 @@
 
 **Cause:** I file sono stati creati in una sessione precedente e non sono stati aggiornati dopo le modifiche allo stack. Gli errori non sono causati dal lavoro corrente.
 
-**Fix needed:** Aggiornare o rimuovere questi file se non sono più necessari, oppure correggerne i tipi.
+**Resolution:** `ai-resume-pdf` è stato rimosso dall'indice della repo Monocode come gitlink estraneo. Il progetto esiste fuori da `Matcode` come sibling in `/Users/magnulemme/Desktop/Projects/Full Stack/ai-resume-pdf`, quindi questi errori non sono più issue del monorepo.
 
 ---
 
-## [OPEN] ai-resume-pdf uses external Puter filesystem for PDF storage
+## [MOVED OUT] ai-resume-pdf uses external Puter filesystem for PDF storage
 
 **Package:** `ai-resume-pdf`
 **Files:** `app/routes/upload.tsx`, `app/routes/resume.tsx`
@@ -157,7 +157,7 @@
 
 **Cause:** Legacy dello stack originale basato su Puter.js. Dopo la migrazione a PostgreSQL e DeepSeek, il file storage non è stato migrato a un sistema interno.
 
-**Fix needed:** Valutare se servire i file direttamente tramite `/api/files/:id` (già esistente) per eliminare la dipendenza da Puter.js.
+**Resolution:** `ai-resume-pdf` è stato rimosso dall'indice della repo Monocode come gitlink estraneo. Il progetto esiste fuori da `Matcode` come sibling in `/Users/magnulemme/Desktop/Projects/Full Stack/ai-resume-pdf`, quindi questa migrazione storage non appartiene più al monorepo.
 
 ---
 

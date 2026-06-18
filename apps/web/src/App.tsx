@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Copy } from "lucide-react";
+import { ArrowRight, BookOpen, Code2, Copy, Settings2, Terminal } from "lucide-react";
 import Hls from "hls.js";
 import { motion, useScroll, useTransform } from "framer-motion";
 import type { MotionValue } from "framer-motion";
+import { Logo } from "./components/Logo";
 import { SiteFooter } from "./components/SiteFooter";
 import { Button } from "./components/ui/button";
 
@@ -21,6 +22,40 @@ const solutionVideo =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4";
 const ctaHlsVideo = "https://stream.mux.com/8wrHPCX2dC3msyYU9ObwqNdm00u3ViXvOSHUMRYSEe5Q.m3u8";
 const installCommand = "bunx @monocode/cli";
+const avatars = ["/avatar-1.svg", "/avatar-2.svg", "/avatar-3.svg"];
+
+const docsSections = [
+  { id: "quick-start", title: "Quick start" },
+  { id: "configuration", title: "Configuration" },
+  { id: "commands", title: "Commands" },
+  { id: "concepts", title: "Core concepts" },
+];
+
+const docsCards = [
+  {
+    title: "Install the CLI",
+    description: "Run Monocode directly in the workspace you want the agent to understand.",
+    icon: Terminal,
+  },
+  {
+    title: "Keep context close",
+    description: "Project overview, architecture notes, standards, and open issues guide every session.",
+    icon: BookOpen,
+  },
+  {
+    title: "Use local tools",
+    description: "File reads, edits, searches, and commands stay bounded to your active workspace.",
+    icon: Code2,
+  },
+];
+
+const commandRows = [
+  { command: "/new", description: "Return to the home prompt and start a fresh session on first submit." },
+  { command: "/sessions", description: "Open the cached session picker without leaving the current chat." },
+  { command: "/model", description: "Select the runtime model used for subsequent requests." },
+  { command: "/theme", description: "Preview and apply a terminal color theme." },
+  { command: "/login", description: "Start the browser-based CLI authentication flow." },
+];
 
 const platformCards = [
   {
@@ -67,6 +102,14 @@ function Mark({ className = "" }: { className?: string }) {
   );
 }
 
+function LogoMark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`grid place-items-center rounded-full bg-foreground text-background ${className}`}>
+      <Logo className="h-[54%] w-[54%]" />
+    </span>
+  );
+}
+
 function GitHubIcon({ className = "" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -79,7 +122,7 @@ function Navbar() {
   return (
     <header className="fixed top-0 z-50 flex w-full items-center justify-between px-8 py-4 md:px-28">
       <a href="#" className="flex items-center gap-3" aria-label="Monocode home">
-        <Mark className="h-7 w-7" />
+        <LogoMark className="h-7 w-7" />
         <span className="text-base font-bold tracking-[-0.02em]">Monocode</span>
       </a>
 
@@ -94,10 +137,8 @@ function Navbar() {
           <GitHubIcon className="h-4 w-4" />
         </a>
         <a
-          href="https://github.com/matterconi/monocode"
+          href="/docs"
           className="hidden items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
-          target="_blank"
-          rel="noreferrer"
         >
           Docs
           <ArrowRight className="h-4 w-4" />
@@ -111,10 +152,13 @@ function AvatarRow() {
   return (
     <motion.div {...fadeUp(0)} className="mb-8 flex items-center justify-center gap-4">
       <div className="flex -space-x-2">
-        {["M", "C", "D"].map((letter) => (
-          <span key={letter} className="grid h-8 w-8 place-items-center rounded-full border-2 border-background bg-foreground text-xs font-semibold text-background">
-            {letter}
-          </span>
+        {avatars.map((avatar, index) => (
+          <img
+            key={avatar}
+            src={avatar}
+            alt={`Monocode developer ${index + 1}`}
+            className="h-8 w-8 rounded-full border-2 border-background bg-foreground object-cover"
+          />
         ))}
       </div>
       <span className="text-sm text-muted-foreground">7,000+ developers already building with context</span>
@@ -143,7 +187,7 @@ function HeroCtas() {
         <span>{copied ? "COPIED" : installCommand}</span>
         <Copy className="h-4 w-4" />
       </motion.button>
-      <a href="https://github.com/matterconi/monocode" target="_blank" rel="noreferrer">
+      <a href="/docs">
         <Button variant="glass" className="rounded-full px-8 py-3 gap-3">
           <span>DOCS</span>
           <ArrowRight className="h-4 w-4" />
@@ -307,7 +351,7 @@ function CtaSection() {
       <CtaVideo />
       <div className="absolute inset-0 z-[1] bg-background/45" />
       <div className="relative z-10 mx-auto max-w-3xl">
-        <motion.div {...fadeUp(0)} className="flex justify-center"><Mark className="h-10 w-10" /></motion.div>
+        <motion.div {...fadeUp(0)} className="flex justify-center"><LogoMark className="h-10 w-10" /></motion.div>
         <motion.h2 {...fadeUp(0.08)} className="mt-8 text-5xl font-medium tracking-[-1px] md:text-7xl">
           Start Your <span className="font-serif font-normal italic">Loop</span>
         </motion.h2>
@@ -320,7 +364,167 @@ function CtaSection() {
   );
 }
 
+function DocsNavbar() {
+  return (
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 px-6 py-4 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <a href="/" className="flex items-center gap-3" aria-label="Monocode home">
+          <LogoMark className="h-7 w-7" />
+          <span className="text-base font-bold tracking-[-0.02em]">Monocode</span>
+        </a>
+        <div className="flex items-center gap-3">
+          <a href="https://github.com/matterconi/monocode" className="text-sm text-muted-foreground transition-colors hover:text-foreground" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          <a href="#quick-start" className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90">
+            Start
+          </a>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function DocsSidebar() {
+  return (
+    <aside className="hidden lg:block">
+      <div className="sticky top-24 rounded-xl border border-border/70 bg-card/50 p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">On this page</p>
+        <nav className="grid gap-1" aria-label="Docs sections">
+          {docsSections.map((section) => (
+            <a key={section.id} href={`#${section.id}`} className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+              {section.title}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </aside>
+  );
+}
+
+function CodeBlock({ children }: { children: string }) {
+  return (
+    <pre className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-4 text-sm leading-6 text-foreground">
+      <code>{children}</code>
+    </pre>
+  );
+}
+
+function DocsPage() {
+  return (
+    <main className="min-h-screen bg-background font-sans text-foreground">
+      <DocsNavbar />
+
+      <section className="border-b border-border/60 px-6 py-20 md:py-28">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+            <Settings2 className="h-3.5 w-3.5" />
+            Developer docs
+          </div>
+          <h1 className="text-4xl font-semibold tracking-[-1.5px] md:text-6xl">Build with Monocode</h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
+            Minimal documentation for installing the CLI, preparing project context, and working with sessions, commands, modes, and local tools.
+          </p>
+          <div className="mx-auto mt-8 max-w-xl rounded-xl border border-border bg-card p-2 text-left shadow-2xl shadow-white/5">
+            <div className="flex items-center justify-between gap-4 rounded-lg bg-background px-4 py-3">
+              <code className="text-sm text-foreground">{installCommand}</code>
+              <Copy className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto grid max-w-7xl gap-10 px-6 py-12 lg:grid-cols-[220px_1fr] lg:py-16">
+        <DocsSidebar />
+        <div className="min-w-0 space-y-14">
+          <section className="grid gap-4 md:grid-cols-3" aria-label="Documentation highlights">
+            {docsCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <article key={card.title} className="rounded-xl border border-border bg-card p-5">
+                  <Icon className="h-5 w-5 text-foreground" />
+                  <h2 className="mt-4 text-base font-semibold">{card.title}</h2>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{card.description}</p>
+                </article>
+              );
+            })}
+          </section>
+
+          <section id="quick-start" className="scroll-mt-24 space-y-5">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">01</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.5px]">Quick start</h2>
+            </div>
+            <CodeBlock>{`cd your-project\nbunx @monocode/cli`}</CodeBlock>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Monocode runs from the current working directory. That directory becomes the workspace boundary for file references and local tool execution.
+            </p>
+          </section>
+
+          <section id="configuration" className="scroll-mt-24 space-y-5">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">02</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.5px]">Configuration</h2>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <h3 className="text-base font-semibold">Context files</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Add a `context/` directory with project overview, architecture, standards, progress, current issues, and workflow rules. Monocode uses these files to stay aligned with your codebase.
+              </p>
+            </div>
+            <CodeBlock>{`context/project-overview.md\ncontext/architecture.md\ncontext/code-standards.md\ncontext/progress-tracker.md\ncontext/current-issues.md`}</CodeBlock>
+          </section>
+
+          <section id="commands" className="scroll-mt-24 space-y-5">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">03</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.5px]">Commands</h2>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
+              {commandRows.map((row) => (
+                <div key={row.command} className="grid gap-2 border-b border-border/70 p-4 last:border-b-0 md:grid-cols-[140px_1fr]">
+                  <code className="text-sm font-medium text-foreground">{row.command}</code>
+                  <p className="text-sm leading-6 text-muted-foreground">{row.description}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section id="concepts" className="scroll-mt-24 space-y-5">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">04</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.5px]">Core concepts</h2>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <article className="rounded-xl border border-border bg-card p-5">
+                <h3 className="text-base font-semibold">Build and Plan</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">Build mode focuses on implementation. Plan mode keeps the loop strategic when you need direction before edits.</p>
+              </article>
+              <article className="rounded-xl border border-border bg-card p-5">
+                <h3 className="text-base font-semibold">Sessions</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">Chats are persisted so message mode, model identity, and history remain stable when you return later.</p>
+              </article>
+              <article className="rounded-xl border border-border bg-card p-5">
+                <h3 className="text-base font-semibold">File references</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">Type `@` in the prompt to reference files and folders from the active workspace without leaving the terminal.</p>
+              </article>
+              <article className="rounded-xl border border-border bg-card p-5">
+                <h3 className="text-base font-semibold">Local execution</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">The server streams tool calls, while the CLI executes approved filesystem and command tools locally inside the workspace boundary.</p>
+              </article>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export function App() {
+  if (window.location.pathname === "/docs") {
+    return <DocsPage />;
+  }
+
   return (
     <main className="min-h-screen bg-background font-sans text-foreground">
       <Navbar />

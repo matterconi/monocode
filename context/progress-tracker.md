@@ -948,6 +948,11 @@ In progress — scaffolding
 - Design system web aggiornato in `index.css` con variabili HSL richieste, font Inter/Instrument Serif locali, classe globale `.liquid-glass` e plugin `tailwindcss-animate` per Tailwind CSS 4.
 - Componenti shadcn-style minimali aggiunti per `Button` e utility `cn`; il form email della hero è stato sostituito da due CTA: comando install copiabile `bunx @monocode/cli` e link Docs verso GitHub.
 - Navbar resa minimale: logo Monocode a sinistra, icona GitHub progetto e link Docs a destra; rimossi i link alle sezioni dalla navbar. La CTA finale ora riusa le stesse azioni install copiabile + Docs della hero.
+- Logo navbar e CTA finale aggiornati per usare lo stesso `Logo` SVG del footer dentro un mark circolare bianco; la riga social proof ora usa tre avatar SVG locali in `apps/web/public/` invece delle lettere `M/C/D`.
 - Asset PNG mancanti nel repo sostituiti con avatar/icon geometrici CSS inline per evitare 404 mantenendo il tema pure black/white.
 - `bun run --cwd apps/web build` passa dopo la landing e dopo il cambio CTA; resta solo warning Vite sulla dimensione chunk JS.
 - `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+- Repo root cleanup: rimossi dall'indice i gitlink estranei `ai-resume-pdf` e `gsap_cocktails`; i progetti separati esistono già come sibling fuori da `Matcode` in `/Users/magnulemme/Desktop/Projects/Full Stack/` e spariranno da GitHub al prossimo commit/push.
+- Pagina `/docs` aggiunta dentro `apps/web/src/App.tsx`: view statica minimale shadcn-style con hero docs, install command, sidebar, quick start, configuration, commands e core concepts. Le CTA Docs della landing puntano ora a `/docs` invece che al repository GitHub.
+- `bun run --cwd apps/web build` passa dopo la pagina docs; resta il warning Vite preesistente sul chunk JS sopra 500 kB.
+- `bun run check` rieseguito dopo la pagina docs: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
