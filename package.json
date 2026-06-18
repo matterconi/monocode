@@ -6,8 +6,10 @@
     "packages/*"
   ],
   "scripts": {
+    "postinstall": "bun run --cwd packages/db generate",
     "server": "bun run --filter @monocode/server dev",
     "cli": "MONOCODE_WORKSPACE_ROOT=\"$PWD\" bun run --cwd apps/cli dev",
+    "web": "bun run --cwd apps/web dev",
     "check": "fallow dead-code && fallow dupes",
     "test": "bun run --filter \"*\" test"
   },

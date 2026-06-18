@@ -1,4 +1,4 @@
-import type { ModeName } from "@matcode/ai"
+import type { ModeName } from "@monocode/ai"
 
 export interface ModeTheme {
   bar: string

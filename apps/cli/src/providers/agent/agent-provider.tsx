@@ -7,7 +7,7 @@ import {
   type ModelId,
   type ModelSettingOverrides,
   type ReasoningEffort,
-} from "@matcode/ai"
+} from "@monocode/ai"
 
 interface AgentContextValue {
   activeReasoningEffort?: ReasoningEffort

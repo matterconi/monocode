@@ -1,6 +1,7 @@
 import { hc } from "hono/client"
-import type { AppType } from "@matcode/server/rpc"
+import type { AppType } from "@monocode/server/rpc"
 
-const serverUrl = "http://localhost:3001"
+const productionServerUrl = "https://monocode.vercel.app/api"
+const serverUrl = process.env.MONOCODE_SERVER_URL?.trim() || productionServerUrl
 
 export const client = hc<AppType>(serverUrl)

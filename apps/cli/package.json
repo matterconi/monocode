@@ -1,6 +1,28 @@
 {
   "name": "@monocode/cli",
   "version": "0.0.1",
+  "private": false,
+  "bin": {
+    "monocode": "./bin/monocode.ts"
+  },
+  "files": [
+    "bin",
+    "src/commands",
+    "src/components",
+    "src/hooks",
+    "src/index.tsx",
+    "src/lib",
+    "src/providers",
+    "src/root-layout.tsx",
+    "src/router.tsx",
+    "src/routes.ts",
+    "src/screens",
+    "src/theme.ts",
+    "src/types"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "bun src/index.tsx",
     "start": "bun src/index.tsx",

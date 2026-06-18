@@ -2,13 +2,13 @@ import { Hono } from "hono"
 import { generateText } from "ai"
 import { zValidator } from "@hono/zod-validator"
 import { z } from "zod"
-import { db, getTextFromMessageParts, type Prisma } from "@matcode/db"
+import { db, getTextFromMessageParts, type Prisma } from "@monocode/db"
 import {
   chatRequestSchema,
   createCodingAgentStream,
   defaultTitleModelId,
   storedMessagePartsSchema,
-} from "@matcode/ai"
+} from "@monocode/ai"
 import { resolveLanguageModelRuntime, UnsupportedModelSettingError } from "../ai/model-resolver"
 import type { ClerkAuth, ClerkAuthEnv } from "../middleware/clerk-auth"
 

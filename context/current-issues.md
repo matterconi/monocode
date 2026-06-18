@@ -172,3 +172,45 @@
 **Cause:** `useChat.sendMessage()` aggiunge il messaggio user localmente prima della request; `clearError()` non modifica `messages`, quindi un errore provider lasciava history locale sporca. Lato server, persistere il messaggio user prima del completamento stream poteva lasciare turni DB orfani.
 
 **Fix:** `useSessionChat` salva uno snapshot pre-submit e in `onError()` ripristina la history, rimuove pending mode/model e mostra un toast d'errore. `sessions.ts` persiste user e assistant solo in `onFinish` dentro una transazione, e la title generation non parte più prima dello stream completato.
+
+---
+
+## [OPEN] DeepSeek key exposed and must be rotated
+
+**Package:** repository
+**File:** `context/progress-tracker.md`
+
+**Symptom:** GitHub Push Protection ha rifiutato inizialmente `git push -u origin main` verso `git@github.com:matterconi/monocode.git` per una chiave DeepSeek presente in un commit locale.
+
+**Cause:** Una nota di avanzamento documentava una variabile `.env` includendo il valore reale della chiave invece di un placeholder.
+
+**Fix:** La history locale è stata riscritta sostituendo il valore con `DEEPSEEK_API_KEY=<redacted>`, i backup di rewrite sono stati rimossi, e `main` è stato pushato su GitHub con tracking `origin/main`.
+
+**Fix still needed:** Revocare/ruotare la chiave esposta nel provider DeepSeek, perché il valore è stato comunque compromesso prima della redazione.
+
+---
+
+## [FIXED] Web landing build fails on current App.tsx
+
+**Package:** `@monocode/web`
+**File:** `apps/web/src/App.tsx`
+
+**Symptom:** `bun run --cwd apps/web build` fallisce durante `tsc --noEmit`.
+
+**Errors:** `lucide-react` non esporta `Instagram`, `Linkedin`, `Twitter`; inoltre diversi componenti `motion.*` ricevono `transition.ease` come stringa generica non compatibile con il tipo `Easing` atteso.
+
+**Impact:** Il deploy root Vercel landing+API non può completare finché la build web non passa. Gli handler API Vercel bundleano correttamente.
+
+**Fix:** Landing riscritta con `framer-motion`, easing tipizzato, icone `lucide-react` disponibili, e CTA hero senza form email. `bun run --cwd apps/web build` passa.
+
+---
+
+## [OPEN] Root `bun install` fails on Prisma preinstall
+
+**Package:** workspace root / `@monocode/db`
+
+**Symptom:** `bun install` fallisce durante il preinstall di `prisma` con il messaggio `Prisma only supports Node.js versions 20.19+, 22.12+, 24.0+`.
+
+**Cause:** Il lifecycle script di Prisma vede una versione Node non supportata nell'ambiente corrente, anche se il workflow usa Bun. Le sessioni precedenti e quella corrente usano `bun install --ignore-scripts` come workaround operativo.
+
+**Fix needed:** Allineare la versione Node disponibile nell'ambiente o evitare che il preinstall Prisma venga eseguito nel workflow Bun standard; continuare a eseguire esplicitamente `bun run --cwd packages/db generate` quando serve rigenerare il client.

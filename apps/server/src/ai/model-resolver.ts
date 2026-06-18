@@ -1,6 +1,6 @@
 import { groq } from "@ai-sdk/groq"
 import { streamText } from "ai"
-import { modelDefinitions, type ModelDefinition, type ModelId, type ModelSettingOverrides } from "@matcode/ai"
+import { modelDefinitions, type ModelDefinition, type ModelId, type ModelSettingOverrides } from "@monocode/ai"
 import type { GroqLanguageModelOptions } from "@ai-sdk/groq"
 
 type StreamTextOptions = Parameters<typeof streamText>[0]

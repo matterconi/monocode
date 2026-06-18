@@ -15,10 +15,10 @@
     "@prisma/adapter-pg": "latest",
     "@prisma/client": "latest",
     "dotenv": "latest",
-    "pg": "latest"
+    "pg": "latest",
+    "prisma": "latest"
   },
   "devDependencies": {
-    "@types/pg": "latest",
-    "prisma": "latest"
+    "@types/pg": "latest"
   }
 }

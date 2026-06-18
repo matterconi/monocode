@@ -8,7 +8,12 @@
   },
   "entry": [
     "apps/server/src/index.ts",
-    "apps/cli/src/index.tsx"
+    "apps/cli/src/index.tsx",
+    "api/[[...route]].ts"
+  ],
+  "ignorePatterns": [
+    "api/**",
+    "apps/server/server.ts"
   ],
   "rules": {}
 }

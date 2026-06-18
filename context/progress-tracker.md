@@ -200,6 +200,12 @@ In progress — scaffolding
 
 ## Completed (sessione corrente)
 
+- Landing web aggiornata con `SiteFooter`: footer nero con dots strip animata, grid nav responsive, wordmark Monocode oversized, legal line e contenuti adattati al prodotto invece del brief aerospace.
+- `bun run --cwd apps/web build` passa dopo l'aggiunta del footer; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati (`unused files`, dipendenza `pg` inutilizzata).
+- Hero web sostituita con hero Lithos full-screen dark: nav fixed, heading Playfair, base image zoom, reveal layer con spotlight canvas-mask cursor-following e CTA `Start Digging`.
+- Font globali web aggiornati a Inter + Playfair Display e aggiunte animazioni `heroReveal`, `heroFadeUp`, `heroZoom`; mantenuto `@import "tailwindcss"` perché il web package usa Tailwind CSS 4.
+- Rimossi `DashboardMockup.tsx` e `Navbar.tsx`, diventati unused dopo la sostituzione della hero; `bun run --cwd apps/web build` passa e `bun run check` torna ai soli issue preesistenti già tracciati.
+
 - Command handling home aggiunto: `chat-commands.ts` definisce il registry statico `/new` e `/exit`, mentre `use-chat-commands.ts` incapsula creazione sessione, navigazione ed exit OpenTUI
 - `HomeTextarea` ora riconosce input che iniziano con `/`, mostra un menu filtrato minimale e dispatcha solo comandi registrati su match esatto
 - `HomeScreen` usa il registry/hook comandi e mantiene il submit normale per creare una chat con prompt iniziale
@@ -355,6 +361,7 @@ In progress — scaffolding
 - `/sessions` opens the modal immediately from cached rows and calls `refreshSessions()` in the background; it includes the current session after first submit because that session is cached before navigation.
 - New session titles are not derived client-side from the raw first line anymore. The server creates the session without a title, then `POST /sessions/:sessionId/messages` uses a small `generateText()` call on the first user message to store a concise 2-5 word classification title.
 - Historical untitled sessions were backfilled by `bun run --cwd packages/db title:sessions` with deterministic `adjective-noun` titles; 44 rows were updated and DB verification showed 46 sessions / 208 messages.
+- GitHub remote `origin` collegato a `git@github.com:matterconi/monocode.git`; SSH autentica come `matterconi`. GitHub Push Protection ha bloccato il primo push per una chiave DeepSeek nella history locale; la history di `main` è stata riscritta con `DEEPSEEK_API_KEY=<redacted>`, i backup del rewrite sono stati rimossi e `git push -u origin main` è riuscito. Resta da ruotare la chiave esposta nel provider.
 
 ## Completed (sessione corrente — interaction layers)
 
@@ -848,3 +855,98 @@ In progress — scaffolding
 - `app/routes/home.tsx`: link "Upload New Resume" nascosto quando `resumes.length >= 3`; messaggio "You have reached the limit of 3 reviews." aggiunto sotto la lista.
 - `app/routes/resume.tsx`: aggiunto `loader` con `redirect` a `/auth` se non autenticato e `resumeData` dal DB; feedback idratato immediatamente dal server, evitando flash del form.
 - `bun run typecheck` rieseguito: nessun nuovo errore introdotto; gli errori rimanenti sono preesistenti nelle route `api/files.ts`, `api/files.$id.ts` e `api/auth.$.ts` già tracciati.
+
+## Completed (sessione corrente — distribuzione locale CLI)
+
+- `apps/cli/bin/monocode.ts` aggiunto come bin wrapper con shebang Bun; importa l'entrypoint TUI esistente senza cambiare directory di lavoro, così `process.cwd()` resta il repository da cui viene lanciato `monocode`.
+- `apps/cli/package.json` espone il comando globale `monocode` tramite il campo `bin` del package `@monocode/cli`.
+- `bun link` eseguito da `apps/cli`: package `@monocode/cli` registrato come linkabile e comando `monocode` risolto in `/Users/magnulemme/.bun/bin/monocode`.
+- Primo tentativo con `bun link --global` ha richiesto il campo `name` nel manifest globale Bun; aggiunto `name: "bun-global"` a `~/.bun/install/global/package.json`, poi l'accidentale link `bun-global` è stato rimosso con `bun unlink` nello store globale.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`unused files`, dipendenze inutilizzate).
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
+
+## Completed (sessione corrente — Vercel Prisma generate)
+
+- Root `package.json` aggiornato con `postinstall: "bun run --cwd packages/db generate"`, così Vercel genera il client Prisma dal root del monorepo durante install/build.
+- `packages/db/package.json` mantiene un solo script package-local `generate` e non aggiunge un secondo `postinstall`, evitando generazioni duplicate o lifecycle loop nei workspace Bun.
+- `prisma` spostato da `devDependencies` a `dependencies` di `@monocode/db`, così il comando resta disponibile anche se un deploy installa solo dipendenze production.
+- `bun install --ignore-scripts --frozen-lockfile` passa, confermando che lo spostamento dev→prod non richiede una risoluzione nuova per Prisma.
+- `bun run --cwd packages/db generate` passa e rigenera il client in `packages/db/generated/client`.
+- `bun run check` rieseguito: fallisce ancora sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+- `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; durante la risoluzione `bunx` ha salvato `bun.lock` nel worktree corrente.
+
+## Completed (sessione corrente — web landing Questly)
+
+- `apps/web` aggiunto come package workspace `@monocode/web` con Vite, React 18 runtime, Tailwind CSS 3 e `lucide-react`.
+- Root script `bun run web` aggiornato a `bun run --cwd apps/web dev`, così Vite serve dalla cartella corretta e trova `index.html`.
+- Landing Questly implementata con hero full viewport, font Nimbus Sans TW01, background image inline, grass overlay, navbar responsive con mobile drawer e dashboard mockup scalato via `ResizeObserver`.
+- Componenti web organizzati in `src/components/`: `Hero`, `Navbar`, `Logo`, `DashboardMockup`; `App.tsx` renderizza la hero.
+- `bun run build` in `apps/web` passa: `tsc --noEmit && vite build` completato con successo dopo l'allineamento dei tipi React richiesti da `lucide-react`.
+- Dev server web avviato e verificato su `http://localhost:5173/` con risposta `200 OK`.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+
+## Completed (sessione corrente — web benefits Monocode)
+
+- Global font web aggiornato a Futura Md BT Medium in `index.html`, `index.css` e Tailwind font stack; `body` ora usa background nero e testo bianco come base visuale.
+- Hero/navbar/dashboard web aggiornati da contenuti Questly a contenuti Monocode per mantenere uniformità di prodotto.
+- `BenefitsSection` aggiunta sotto la hero dentro wrapper `w-full max-w-[1400px]`, con tre card responsive, superfici `neutral-950`, blob blu e video centrale con fade verso il card background.
+- Copy della sezione benefits adattata a Monocode: context-aware code scouting, workflow terminal-native, sessioni durevoli e azioni locali sicure.
+- `bun run build` in `apps/web` passa dopo l'aggiunta della sezione.
+- Dev server web riavviato e verificato su `http://localhost:5173/` con risposta `200 OK`.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+
+## Completed (sessione corrente — web stats section)
+
+- `apps/web` migrato alla configurazione richiesta per la landing stats: React 19, Vite 6, Tailwind CSS 4 con `@tailwindcss/vite`, e `motion` importato da `motion/react`.
+- Global CSS web aggiornato con Google Fonts Barlow + Instrument Serif e theme fonts Tailwind v4 `--font-sans` / `--font-dm-serif`; wrapper pagina impostato su `bg-black font-sans text-white`.
+- `StatsSection` aggiunta alla landing dopo la hero: layout responsive a due colonne, typewriter scroll-triggered, counter animati, griglia statistiche e video mascherato dal logo SVG inline.
+- `postcss.config.js` rimosso dal web package perché Tailwind v4 è gestito dal plugin Vite; `tsconfig.json` aggiornato di conseguenza.
+- `bun install --ignore-scripts` eseguito per aggiornare `bun.lock`; `bun install` normale resta bloccato dal preinstall Prisma già noto nel workspace.
+- `bun run --cwd apps/web build` passa con `tsc --noEmit && vite build`.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
+- Fix runtime web: `react` e `react-dom` pinnati entrambi a `19.2.6` per eliminare il mismatch `react 19.2.6` / `react-dom 19.2.7` segnalato dal browser.
+- `bun install --ignore-scripts` e `bun run --cwd apps/web build` rieseguiti dopo il pin React: build web passa.
+- Dev server web riavviato con `--force` su `http://localhost:5173/` e risposta `200 OK`.
+- `InstallSection` spostata sotto `StatsSection`; la stats grid ora mostra solo 4 metriche Monocode: 3 workspace apps, 2 agent modes, 5 local tool actions, 60s hosted stream window.
+- `bun run --cwd apps/web build` passa dopo il riordino sezioni; dev server web riavviato con `--force` su `http://localhost:5173/`.
+
+## Completed (sessione corrente — Vercel deploy prep)
+
+- Import workspace residui `@matcode/*` corretti a `@monocode/*`, allineando codice e package names reali prima di deploy/publish.
+- `vercel.json` aggiunto alla root: install con `bun install --frozen-lockfile`, build landing con `bun run --cwd apps/web build`, output `apps/web/dist`, framework Vite.
+- `api/[[...route]].ts` aggiunto come adapter Vercel: importa l'app Hono da `apps/server/src/app.ts`, la monta sotto `/api` e esporta handler `GET`/`POST` con runtime `nodejs` e `maxDuration = 60`.
+- CLI production-first: `apps/cli/src/lib/client.ts` usa `MONOCODE_SERVER_URL` solo come override e default provvisorio `https://monocode.vercel.app/api` da aggiornare dopo il primo deploy se Vercel assegna un URL diverso.
+- `@monocode/cli` e `@monocode/ai` preparati per publish pubblico npm con `private: false`, `files` e `publishConfig.access = "public"`.
+- Landing aggiornata con CTA install `bunx @monocode/cli`, nuova sezione `Install`, navbar ancorata a install/benefits/stack e copy stats coerente con server Vercel + CLI.
+- Decisione deployment: niente dominio custom; si usa l'URL generato da Vercel. La CLI pubblicata deve puntare di default al server live, non a `localhost`.
+- `.fallowrc.json` aggiornato con ignore `api/**` perché le API Vercel sono raggiunte tramite convenzione filesystem e non tramite import applicativi; il file contiene anche una suppression commentata con la motivazione.
+- `bun run --cwd apps/web build` passa con Vite production build.
+- `bun build ./api/[[...route]].ts --target node` passa, confermando che l'handler Vercel risolve server, DB e AI package.
+- `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; durante la risoluzione `bunx` ha salvato `bun.lock` nel worktree corrente.
+- `bun build apps/cli/src/index.tsx --target bun` passa dopo il cambio namespace `@monocode/*` e il default server URL production-first.
+- `bun publish --dry-run` in `apps/cli` prepara il package ma si ferma su autenticazione npm mancante, come atteso; il contenuto packed non include più `src/scripts/test-chat.ts` dopo la restrizione del campo `files`.
+- `bun pm pack` eseguito per `@monocode/cli`: il manifest packed riscrive `@monocode/ai` da `workspace:*` a `0.0.1`, quindi l'ordine publish deve essere `@monocode/ai` prima e `@monocode/cli` dopo.
+- `bun pm pack` eseguito anche per `@monocode/ai`: tarball generato correttamente con solo `src` e `package.json`.
+- `bun install --frozen-lockfile --ignore-scripts` passa dopo le modifiche ai manifest publish.
+- `bun run check` rieseguito: il nuovo file Vercel non è più segnalato; restano solo gli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — Vercel 404 route fix)
+
+- `api/[[...route]].ts` sostituito con route function standard `api/index.ts` e `api/[...route].ts`, perché il deploy riportava `404: NOT_FOUND` coerente con mancata discovery dell'optional catch-all o Root Directory errata.
+- Entrambi gli handler root importano l'app Hono da `apps/server/src/app.ts`, la montano sotto `/api` con `new Hono().route("/api", app)`, ed esportano `GET`/`POST` tramite `hono/vercel`.
+- `apps/server/server.ts` aggiunto come fallback per il caso in cui il progetto Vercel sia stato creato con Root Directory `apps/server` e preset Hono: default-exporta l'app senza modificare `apps/server/src/index.ts` o l'entrypoint Bun locale.
+- `.fallowrc.json` aggiornata per ignorare anche `apps/server/server.ts`, perché è raggiunto da Vercel per convenzione e non da import applicativi.
+- `bun build ./api/index.ts ./api/[...route].ts --target node` passa.
+- `bun build ./apps/server/server.ts --target node` passa.
+- `bun run check` rieseguito: i nuovi entrypoint Vercel non sono più segnalati; restano issue già noti/preesistenti più dipendenze web correnti (`motion`, `tailwindcss-animate`) segnalate da Fallow.
+- `bun run --cwd apps/web build` inizialmente falliva su `apps/web/src/App.tsx` per import social non esportati da `lucide-react` e typing `motion` di `transition.ease`; la landing è stata poi riscritta/corretta e la build web passa.
+
+## Completed (sessione corrente — Mindloop-style Monocode landing)
+
+- Landing web sostituita con pagina dark monochrome ispirata al brief Mindloop ma adattata a Monocode: navbar fixed, hero video, sezioni Search/Mission/Solution, CTA con video HLS e footer Monocode mantenuto.
+- Dipendenze web aggiornate: aggiunti `framer-motion`, `hls.js`, `@fontsource/inter`, `@fontsource/instrument-serif`, `tailwindcss-animate`; rimosso `motion` non più usato.
+- Design system web aggiornato in `index.css` con variabili HSL richieste, font Inter/Instrument Serif locali, classe globale `.liquid-glass` e plugin `tailwindcss-animate` per Tailwind CSS 4.
+- Componenti shadcn-style minimali aggiunti per `Button` e utility `cn`; il form email della hero è stato sostituito da due CTA: comando install copiabile `bunx @monocode/cli` e link Docs verso GitHub.
+- Asset PNG mancanti nel repo sostituiti con avatar/icon geometrici CSS inline per evitare 404 mantenendo il tema pure black/white.
+- `bun run --cwd apps/web build` passa dopo la landing e dopo il cambio CTA; resta solo warning Vite sulla dimensione chunk JS.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).

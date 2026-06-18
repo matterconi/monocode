@@ -1,9 +1,16 @@
 {
   "name": "@monocode/ai",
   "version": "0.0.1",
+  "private": false,
   "main": "src/index.ts",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "ai": "^6.0.175",

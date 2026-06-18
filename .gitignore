@@ -1,7 +1,9 @@
 .fallow/
+.DS_Store
 node_modules/
 .env
 .env.local
 .env*.local
 .firecrawl/
+apps/web/dist/
 packages/db/generated/

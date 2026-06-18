@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
-import { modelDefinitions, modelOrder, type ModelDefinition, type ModelId } from "@matcode/ai"
+import { modelDefinitions, modelOrder, type ModelDefinition, type ModelId } from "@monocode/ai"
 import { useAgent } from "../../providers/agent"
 import { useDialog } from "../../providers/dialog"
 import { useTheme } from "../../providers/theme"

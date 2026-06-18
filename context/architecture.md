@@ -7,6 +7,7 @@
 | Runtime    | Bun 1.3.x         | JS runtime + package manager  |
 | Server     | Hono              | HTTP routing and middleware    |
 | CLI        | OpenTUI React     | Terminal UI rendering          |
+| Web        | Vite + React      | Browser landing page           |
 | Language   | TypeScript        | All packages                  |
 
 ## Workspace Layout
@@ -14,6 +15,10 @@
 ```
 Monocode/
 ├── package.json          # workspace root (private)
+├── vercel.json           # Vercel deployment: web build + API functions
+├── api/
+│   ├── index.ts          # Vercel handler for /api
+│   └── [...route].ts     # Vercel handler for /api/*
 ├── bun.lock
 ├── AGENTS.md
 ├── context/
@@ -29,6 +34,16 @@ Monocode/
 │       │   └── clerk-auth.ts # Clerk session auth middleware
 │       └── routes/       # one file per route group, flat
 │           └── chat.ts   # POST /chat — streaming AI chat
+├── apps/web/             # @monocode/web
+│   ├── package.json
+│   ├── index.html
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   └── src/
+│       ├── App.tsx       # renders the landing hero
+│       ├── main.tsx      # ReactDOM entry
+│       ├── index.css     # Tailwind + web animations
+│       └── components/   # Hero, Navbar, Logo, DashboardMockup
 └── apps/cli/             # @monocode/cli
     ├── package.json
     ├── tsconfig.json
@@ -96,6 +111,18 @@ Monocode/
 
 - `apps/server/` — HTTP layer only. No business logic yet.
 - `apps/cli/` — Terminal UI plus typed HTTP client setup. No product workflow API calls yet.
+- `apps/web/` — Browser landing page only. It is presentation UI and does not own product workflow state.
+- `api/index.ts` and `api/[...route].ts` — Vercel adapter boundary only. They import the Hono app from `apps/server/src/app.ts` and mount it under `/api`; they must not own route logic.
+
+## Deployment
+
+- Vercel deploys from the repository root.
+- `apps/web` is the public landing page. Vercel runs `bun run --cwd apps/web build` and serves `apps/web/dist`.
+- The Hono server runs on Vercel through `api/index.ts` and `api/[...route].ts`, so production API routes are available under `/api/*` on the generated Vercel URL. Use standard catch-all `[...route]` instead of optional catch-all because Vercel function discovery is more reliable with the standard route file.
+- `apps/server/server.ts` exists only as a compatibility entrypoint if a Vercel project is accidentally created with Root Directory `apps/server` and Hono preset. It default-exports the Hono app but does not replace the Bun local entrypoint.
+- `apps/server/src/index.ts` remains the Bun local entrypoint with `Bun.serve({ fetch: app.fetch })`; do not convert it to a default-export server entry.
+- `@monocode/cli` is the public npm package entry for users. Its Hono client defaults to the production Vercel API URL and supports `MONOCODE_SERVER_URL` only as an explicit override.
+- Until the first Vercel deploy produces the generated URL, `apps/cli/src/lib/client.ts` uses the provisional `https://monocode.vercel.app/api` default. Update this constant before publishing `@monocode/cli` if Vercel assigns a different URL.
 
 ## Coding Agent Tools
 
