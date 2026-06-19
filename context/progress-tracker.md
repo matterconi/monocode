@@ -988,3 +988,10 @@ In progress — scaffolding
 - Middleware Clerk aggiornato: `AUTH_DEBUG=1` ora logga anche presenza sicura di `CLERK_SECRET_KEY`/`CLERK_PUBLISHABLE_KEY` e intercetta errori di `authenticateRequest()` senza stampare token o segreti, restituendo JSON `{"error":"Authentication failed"}` invece di lasciare uscire l'eccezione.
 - Verifiche server: `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; `bun build ./api/index.ts "./api/[...route].ts" --target node --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-api-auth-debug-check-2` passa; riproduzione locale con env Clerk vuote mostra il nuovo log safe e risposta 500 controllata.
 - `bun run check` rieseguito dopo la modifica middleware: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — Vercel API ESM crash)
+
+- Log Vercel production analizzati: la funzione crasha prima di entrare in Hono/Clerk perché Node carica `/var/task/api/index.js` e `/var/task/api/[...route].js` come CommonJS mentre i file generati contengono `import { handle } from "hono/vercel"`.
+- Root `package.json` aggiornato con `"type": "module"`, così il nearest package.json usato da Node/Vercel marca gli handler API generati come ESM.
+- `architecture.md` aggiornato con l'invariante deployment: il root package resta ESM finché gli handler Vercel sono ESM.
+- Verifiche: `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; `bun build ./api/index.ts "./api/[...route].ts" --target node --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-api-esm-check` passa; `bun run --cwd apps/web build` passa con il warning chunk size preesistente; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).

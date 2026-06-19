@@ -238,8 +238,12 @@
 
 **Symptom:** `GET https://monocode-server.vercel.app/api/sessions` and `GET https://monocode-server.vercel.app/api` return `500 FUNCTION_INVOCATION_FAILED` instead of a controlled `401`/JSON response for unauthenticated requests.
 
-**Likely cause:** The live Vercel function is failing inside Clerk authentication before route handling. Local reproduction with an empty `CLERK_PUBLISHABLE_KEY` throws `Publishable key is missing` from `@clerk/backend.authenticateRequest()`, matching the suspected production failure mode.
+**Observed production cause:** Vercel logs show Node failing before Hono/Clerk route handling: `/var/task/api/index.js` and `/var/task/api/[...route].js` contain ESM `import` syntax but are loaded as CommonJS, producing `SyntaxError: Cannot use import statement outside a module`.
+
+**Previous suspected cause:** The live function might also fail inside Clerk authentication if env vars are missing. Local reproduction with an empty `CLERK_PUBLISHABLE_KEY` throws `Publishable key is missing` from `@clerk/backend.authenticateRequest()`, but the current production logs show the ESM/CJS loader crash happens earlier.
 
 **Mitigation added:** The Clerk middleware now wraps `authenticateRequest()` and, when `AUTH_DEBUG=1`, logs method/path, Authorization presence/scheme, safe env presence booleans, and error name/message without printing tokens or secret values.
 
-**Fix still needed:** Redeploy the server with this middleware, enable `AUTH_DEBUG=1` temporarily if needed, then verify whether the production deployment sees `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the correct Vercel environment/project/deployment.
+**Fix attempted:** Root `package.json` now declares `"type": "module"` so Vercel/Node should load generated `api/*.js` handlers as ESM.
+
+**Fix still needed:** Redeploy production and verify `/api` and `/api/sessions`. Expected next state is either controlled `401` for unauthenticated requests or safe `AUTH_DEBUG=1` Clerk diagnostics if env configuration is still wrong.
