@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { modelIds } from "./constants/models"
+import { modelIds } from "./constants/models.js"
 
 export const modelSchema = z.enum(modelIds)
 

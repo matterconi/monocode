@@ -1,4 +1,4 @@
-import { BASE_DIR } from "./sandbox"
+import { BASE_DIR } from "./sandbox.js"
 import type { RunCommandInput } from "./schemas"
 
 export async function runCommand({ command, args }: RunCommandInput) {

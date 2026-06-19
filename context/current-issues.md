@@ -286,3 +286,16 @@
 **Cause:** Vercel resolved the server app module but exposed it through an interop shape that did not include the ESM named export expected by `import { app } ...`. This is a Vercel/Node loader boundary issue, not a missing file.
 
 **Fix:** Vercel entrypoints now import the app module as a namespace and resolve `app` from `appModule.app` with fallback to `appModule.default`, so the handler works whether the compiled module exposes ESM named exports or a default/CJS-like shape.
+
+---
+
+## [FIXED] Vercel loads nested workspace JS as CommonJS
+
+**Package:** `@monocode/server`, `@monocode-ai/ai`, `@monocode/db`
+**Files:** `apps/server/package.json`, `packages/ai/package.json`, `packages/db/package.json`, runtime relative imports in those packages
+
+**Symptom:** Vercel `GET /api/sessions` failed with `Warning: Failed to load the ES module: /var/task/apps/server/src/app.js` followed by `SyntaxError: Cannot use import statement outside a module`.
+
+**Cause:** The root `package.json` declares `"type": "module"`, but Node uses the nearest `package.json`. For `/var/task/apps/server/src/app.js`, that nearest boundary is `apps/server/package.json`, which did not declare ESM, so Node treated Vercel's emitted `.js` file as CommonJS.
+
+**Fix:** Server-side workspace package boundaries now declare `"type": "module"`, and their runtime relative imports/exports use `.js` specifiers so Node ESM can resolve the transpiled files inside Vercel functions.

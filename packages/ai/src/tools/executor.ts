@@ -1,8 +1,8 @@
 import type { ToolCall } from "./calls"
-import { listFiles } from "./list-files"
-import { readFile } from "./read-file"
-import { runCommand } from "./run-command"
-import { searchFiles } from "./search-files"
+import { listFiles } from "./list-files.js"
+import { readFile } from "./read-file.js"
+import { runCommand } from "./run-command.js"
+import { searchFiles } from "./search-files.js"
 import {
   listFilesSchema,
   readFileSchema,
@@ -10,7 +10,7 @@ import {
   searchFilesSchema,
   writeFileSchema,
 } from "./schemas"
-import { writeFile } from "./write-file"
+import { writeFile } from "./write-file.js"
 
 export async function executeTool(call: ToolCall) {
   switch (call.toolName) {

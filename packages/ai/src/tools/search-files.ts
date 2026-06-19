@@ -1,4 +1,4 @@
-import { safePath } from "./sandbox"
+import { safePath } from "./sandbox.js"
 import type { SearchFilesInput } from "./schemas"
 
 export async function searchFiles({ pattern, path }: SearchFilesInput) {

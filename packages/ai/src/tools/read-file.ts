@@ -1,4 +1,4 @@
-import { safePath } from "./sandbox"
+import { safePath } from "./sandbox.js"
 import type { ReadFileInput } from "./schemas"
 
 export async function readFile({ path }: ReadFileInput) {

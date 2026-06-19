@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { codingTools } from "../tools/definitions"
+import { codingTools } from "../tools/definitions.js"
 
 export const modeSchema = z.enum(["build", "plan"])
 

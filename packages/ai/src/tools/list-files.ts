@@ -1,5 +1,5 @@
 import { readdir } from "fs/promises"
-import { safePath } from "./sandbox"
+import { safePath } from "./sandbox.js"
 import type { ListFilesInput } from "./schemas"
 
 export async function listFiles({ path }: ListFilesInput) {

@@ -1,6 +1,6 @@
 import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai"
-import { getToolsForMode, modes, type ModeName } from "../modes"
-import { modelDefinitions, type ModelId } from "../models"
+import { getToolsForMode, modes, type ModeName } from "../modes/index.js"
+import { modelDefinitions, type ModelId } from "../models/index.js"
 
 const SYSTEM_PROMPT = `You are a coding assistant. Answer the user's prompt directly.
 Use tools only when the user asks you to inspect, modify, run, or search the codebase, or when a tool is necessary to answer accurately.

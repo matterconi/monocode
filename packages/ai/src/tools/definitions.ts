@@ -5,7 +5,7 @@ import {
   runCommandSchema,
   searchFilesSchema,
   writeFileSchema,
-} from "./schemas"
+} from "./schemas.js"
 
 export const codingTools = {
   read_file: tool({

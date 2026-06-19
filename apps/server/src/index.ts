@@ -1,4 +1,4 @@
-import { app } from "./app"
+import { app } from "./app.js"
 
 if (!process.env.GROQ_API_KEY) {
   console.error("Missing GROQ_API_KEY")

@@ -1025,3 +1025,9 @@ In progress — scaffolding
 - Nuovi log Vercel production dopo il fix `.js`: il modulo `../apps/server/src/app.js` viene risolto, ma il loader non espone il named export `app` e fallisce con `SyntaxError: The requested module '../apps/server/src/app.js' does not provide an export named 'app'`.
 - Patch minima sul boundary Vercel: `api/index.ts`, `api/[...route].ts` e `apps/server/server.ts` importano il modulo app come namespace e risolvono `app` da `appModule.app` con fallback a `appModule.default`, coprendo sia ESM named export locale sia output Vercel/CJS-like con default export.
 - L'app Hono resta definita in `apps/server/src/app.ts` con `export const app`; l'entrypoint Bun locale `apps/server/src/index.ts` non cambia.
+
+## Completed (sessione corrente — Vercel nested package ESM boundary)
+
+- Nuovi log Vercel production: `/var/task/apps/server/src/app.js` viene caricato come CommonJS perché il nearest package boundary è `apps/server/package.json`, non la root con `"type": "module"`; Node quindi fallisce su `import { Hono } from "hono"` con `Cannot use import statement outside a module`.
+- Patch minima di boundary: `apps/server/package.json`, `packages/ai/package.json` e `packages/db/package.json` dichiarano `"type": "module"`, perché Vercel emette `.js` ESM anche sotto questi package workspace.
+- Gli import/export relativi runtime dei workspace server-side (`apps/server`, `packages/ai`, `packages/db`) sono stati allineati a specifier `.js`; gli import type-only restano invariati perché vengono rimossi dal transpile.

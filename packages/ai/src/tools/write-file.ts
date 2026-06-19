@@ -1,4 +1,4 @@
-import { safePath } from "./sandbox"
+import { safePath } from "./sandbox.js"
 import type { WriteFileInput } from "./schemas"
 
 export async function writeFile({ path, content }: WriteFileInput) {

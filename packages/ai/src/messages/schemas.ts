@@ -1,7 +1,7 @@
 import type { UIMessage } from "ai"
 import { z } from "zod"
-import { modeSchema } from "../modes"
-import { defaultCodingModelId, modelSchema, modelSettingOverridesSchema } from "../models"
+import { modeSchema } from "../modes/index.js"
+import { defaultCodingModelId, modelSchema, modelSettingOverridesSchema } from "../models/index.js"
 import type { CodingUIMessage } from "../types"
 
 export const uiMessageSchema: z.ZodType<UIMessage> = z.custom<UIMessage>((value) => {
