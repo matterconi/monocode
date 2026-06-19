@@ -1019,3 +1019,9 @@ In progress — scaffolding
 - Verifica build: `bun build ./api/index.ts "./api/[...route].ts" --target node` richiede `--outdir` con Bun 1.3.13 quando ci sono più entrypoint; con outdir temporaneo passa e produce bundle self-contained.
 - Smoke ESM non-bundled: transpile con esbuild di `api/*` e della catena `apps/server/src` conferma che tutti gli import relativi runtime emessi hanno estensione `.js`.
 - `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — Vercel API app export interop)
+
+- Nuovi log Vercel production dopo il fix `.js`: il modulo `../apps/server/src/app.js` viene risolto, ma il loader non espone il named export `app` e fallisce con `SyntaxError: The requested module '../apps/server/src/app.js' does not provide an export named 'app'`.
+- Patch minima sul boundary Vercel: `api/index.ts`, `api/[...route].ts` e `apps/server/server.ts` importano il modulo app come namespace e risolvono `app` da `appModule.app` con fallback a `appModule.default`, coprendo sia ESM named export locale sia output Vercel/CJS-like con default export.
+- L'app Hono resta definita in `apps/server/src/app.ts` con `export const app`; l'entrypoint Bun locale `apps/server/src/index.ts` non cambia.

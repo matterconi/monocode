@@ -1,5 +1,10 @@
 // fallow-ignore-next-line unused-files -- Vercel discovers API functions by filesystem convention.
-import { app } from "../apps/server/src/app.js"
+import * as serverApp from "../apps/server/src/app.js"
+
+const appModule = serverApp as unknown as { app?: typeof serverApp.app; default?: typeof serverApp.app }
+const app = appModule.app ?? appModule.default
+
+if (!app) throw new Error("Unable to resolve Hono app export")
 
 export const runtime = "nodejs"
 export const maxDuration = 60

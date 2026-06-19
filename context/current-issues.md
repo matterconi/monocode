@@ -273,3 +273,16 @@
 **Cause:** Vercel's Node function output was ESM and preserved the relative runtime import from the API handler. The specifier was extensionless (`../apps/server/src/app`), so Node ESM tried the exact path `/var/task/apps/server/src/app` and did not append `.js`. Bun and TypeScript `moduleResolution: "bundler"` accept this locally, but the Vercel runtime does not.
 
 **Fix:** Runtime relative imports in the Vercel API path now use `.js` specifiers, including the next server imports that Node resolves after loading `app.js`. Type-only imports were left unchanged because they are erased before runtime.
+
+---
+
+## [FIXED] Vercel API function cannot see named `app` export
+
+**Package:** workspace root / Vercel API functions
+**Files:** `api/index.ts`, `api/[...route].ts`, `apps/server/server.ts`
+
+**Symptom:** Vercel `GET /api/sessions` failed after path resolution with `SyntaxError: The requested module '../apps/server/src/app.js' does not provide an export named 'app'`.
+
+**Cause:** Vercel resolved the server app module but exposed it through an interop shape that did not include the ESM named export expected by `import { app } ...`. This is a Vercel/Node loader boundary issue, not a missing file.
+
+**Fix:** Vercel entrypoints now import the app module as a namespace and resolve `app` from `appModule.app` with fallback to `appModule.default`, so the handler works whether the compiled module exposes ESM named exports or a default/CJS-like shape.
