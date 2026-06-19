@@ -124,7 +124,7 @@ Monocode/
 - The Vercel project must define server runtime Environment Variables for `GROQ_API_KEY`, `DATABASE_URL`, `CLERK_SECRET_KEY`, and `CLERK_PUBLISHABLE_KEY`. The Clerk publishable key name is exactly `CLERK_PUBLISHABLE_KEY`; do not use `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for this Hono API because the server middleware reads the backend env name.
 - `apps/server/server.ts` exists only as a compatibility entrypoint if a Vercel project is accidentally created with Root Directory `apps/server` and Hono preset. It default-exports the Hono app but does not replace the Bun local entrypoint.
 - `apps/server/src/index.ts` remains the Bun local entrypoint with `Bun.serve({ fetch: app.fetch })`; do not convert it to a default-export server entry.
-- `@monocode-ai/cli` is the public npm package entry for users. Its Hono client defaults to `https://monocode-server.vercel.app/api` and supports `MONOCODE_SERVER_URL` only as an explicit override.
+- `@monocode-ai/cli` is the public npm package entry for users. Its Hono client defaults to `https://monocode-server.vercel.app/api` for npm/production, uses `http://localhost:3001` only when `MONOCODE_SERVER_ENV=development` is set for local development, and always lets `MONOCODE_SERVER_URL` override both.
 
 ## Coding Agent Tools
 

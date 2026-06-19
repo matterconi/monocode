@@ -189,7 +189,7 @@ In progress — scaffolding
 - OpenTUI React chosen over raw `@opentui/core` for component model and hooks.
 - `--cwd cli` used instead of `--filter` for CLI root script: `--filter` wrappa lo stdio rompendo il TTY detection di OpenTUI. `--cwd` esegue direttamente nella directory del package ereditando il terminale reale.
 - `@monocode/server` ora espone l'app Hono da package export per permettere alla CLI di importare `AppType` senza avviare `Bun.serve()`.
-- Il client RPC della CLI punta al default locale `http://localhost:3001`; la configurazione dinamica resta fuori scope finché il workflow reale non è definito.
+- Il client RPC della CLI punta al server production Vercel di default, usa `MONOCODE_SERVER_URL` come override esplicito, e usa `http://localhost:3001` solo con `MONOCODE_SERVER_ENV=development` per sviluppo locale.
 - I client RPC devono usare il subpath type-only `@monocode/server/rpc`; questo mantiene la type-safety Hono senza includere il server nel bundle/runtime della CLI.
 - Coding tools: niente registry generato per ora. `schemas.ts`, `definitions.ts`, `executor.ts`, `calls.ts` e `types.ts` sono espliciti; la duplicazione è accettata per evitare type gymnastics e mantenere il flow comprensibile.
 - Modes: `modeSchema` in `@monocode-ai/ai` è la source of truth runtime/type per i mode; server e CLI devono importare quello invece di duplicare `z.enum(["build", "plan"])` o literal union locali.
@@ -917,7 +917,7 @@ In progress — scaffolding
 - Import workspace residui `@matcode/*` corretti a `@monocode/*`, allineando codice e package names reali prima di deploy/publish.
 - `vercel.json` aggiunto alla root: install con `bun install --frozen-lockfile`, build landing con `bun run --cwd apps/web build`, output `apps/web/dist`, framework Vite.
 - `api/[[...route]].ts` aggiunto come adapter Vercel: importa l'app Hono da `apps/server/src/app.ts`, la monta sotto `/api` e esporta handler `GET`/`POST` con runtime `nodejs` e `maxDuration = 60`.
-- CLI production-first: `apps/cli/src/lib/client.ts` usa `MONOCODE_SERVER_URL` solo come override e default provvisorio `https://monocode.vercel.app/api` da aggiornare dopo il primo deploy se Vercel assegna un URL diverso.
+- CLI production-first: `apps/cli/src/lib/client.ts` usa `MONOCODE_SERVER_URL` solo come override, default production `https://monocode-server.vercel.app/api`, e opt-in locale `MONOCODE_SERVER_ENV=development` verso `http://localhost:3001`.
 - `@monocode-ai/cli` e `@monocode-ai/ai` preparati per publish pubblico npm con `private: false`, `files` e `publishConfig.access = "public"`.
 - Landing aggiornata con CTA install `bunx @monocode-ai/cli`, nuova sezione `Install`, navbar ancorata a install/benefits/stack e copy stats coerente con server Vercel + CLI.
 - Decisione deployment: niente dominio custom; si usa l'URL generato da Vercel. La CLI pubblicata deve puntare di default al server live, non a `localhost`.
@@ -1040,3 +1040,12 @@ In progress — scaffolding
 - `packages/db/dist/` aggiunto a `.gitignore` perché è output generato in install/build, mentre il client Prisma generato resta gestito dal workflow già esistente.
 - Verifiche su `main`: `bun install --frozen-lockfile` passa e genera `packages/db/dist/index.js`; `bun build ./api/index.ts "./api/[...route].ts" ./apps/server/server.ts --target node --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-db-boundary-main` passa; `node --input-type=module -e "console.log(await import.meta.resolve('@monocode/db'))"` risolve a `packages/db/dist/index.js`; smoke import Node con `DATABASE_URL` dummy carica `db` e `getTextFromMessageParts`.
 - `bun run check` rieseguito dopo il fix: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — production-only Vercel separation)
+
+- URL resolution CLI isolata in `apps/cli/src/lib/client.ts`: `MONOCODE_SERVER_URL` resta override esplicito, `MONOCODE_SERVER_ENV=development` usa solo `http://localhost:3001`, e il default pubblicato punta a `https://monocode-server.vercel.app/api`.
+- `bun install --frozen-lockfile` verificato: lockfile coerente, ma il comando resta bloccato dal `postinstall` Prisma perché `DATABASE_URL` non è presente nel worktree, issue già tracciata.
+- `bun build ./api/index.ts "./api/[...route].ts" ./apps/server/server.ts --target node --outdir <temp>` passa e produce i tre bundle Node richiesti.
+- Smoke CLI URL: default senza env -> `https://monocode-server.vercel.app/api/sessions`; `MONOCODE_SERVER_ENV=development` -> `http://localhost:3001/sessions`; `MONOCODE_SERVER_URL` override vince anche in development.
+- Smoke Vercel bundle: i bundle temporanei `api/*`/`apps/server/server.js` non contengono `MONOCODE_SERVER_ENV`, `MONOCODE_SERVER_URL`, `localhost:3001` o l'URL production della CLI, confermando che Vercel non dipende dalla logica dev/CLI.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
