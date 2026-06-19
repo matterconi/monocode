@@ -16,6 +16,13 @@ function getAuthorizationDebug(authorizationHeader: string | undefined) {
   return { hasAuthorization: true, scheme: scheme || null }
 }
 
+function getClerkEnvDebug() {
+  return {
+    hasClerkSecretKey: Boolean(process.env.CLERK_SECRET_KEY?.trim()),
+    hasClerkPublishableKey: Boolean(process.env.CLERK_PUBLISHABLE_KEY?.trim()),
+  }
+}
+
 export function createClerkAuthMiddleware(options: ClerkOptions = {}) {
   const clerkClient = createClerkClient({
     secretKey: process.env.CLERK_SECRET_KEY,
@@ -25,16 +32,39 @@ export function createClerkAuthMiddleware(options: ClerkOptions = {}) {
 
   return createMiddleware<ClerkAuthEnv>(async (c, next) => {
     const authorizationDebug = getAuthorizationDebug(c.req.header("Authorization"))
-    const requestState = await clerkClient.authenticateRequest(c.req.raw, {
-      acceptsToken: ["session_token", "oauth_token"],
-    })
+    const requestDebug = {
+      method: c.req.method,
+      path: c.req.path,
+      ...authorizationDebug,
+      ...getClerkEnvDebug(),
+    }
+    async function authenticateClerkRequest() {
+      return clerkClient.authenticateRequest(c.req.raw, {
+        acceptsToken: ["session_token", "oauth_token"],
+      })
+    }
+
+    let requestState: Awaited<ReturnType<typeof authenticateClerkRequest>>
+
+    try {
+      requestState = await authenticateClerkRequest()
+    } catch (err) {
+      if (process.env.AUTH_DEBUG === "1") {
+        console.log("[auth] error", {
+          ...requestDebug,
+          errorName: err instanceof Error ? err.name : null,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        })
+      }
+
+      return c.json({ error: "Authentication failed" }, 500)
+    }
+
     const auth = requestState.toAuth()
 
     if (process.env.AUTH_DEBUG === "1") {
       console.log("[auth] request", {
-        method: c.req.method,
-        path: c.req.path,
-        ...authorizationDebug,
+        ...requestDebug,
         requestStatus: requestState.status,
         requestTokenType: requestState.tokenType,
         requestIsAuthenticated: requestState.isAuthenticated,

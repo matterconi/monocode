@@ -39,7 +39,7 @@ In progress — scaffolding
 - Endpoint `POST /completion` — `streamText` + `toUIMessageStreamResponse()`, UI message stream per `useCompletion`
 - `zValidator` aggiunto a `POST /completion` con hook `!result.success` esplicito; body tipizzato via `c.req.valid("json")`
 - `zod` e `@hono/zod-validator` installati in `@monocode/server`
-- `@ai-sdk/react` installato in `@monocode/cli`
+- `@ai-sdk/react` installato in `@monocode-ai/cli`
 - Check `DEEPSEEK_API_KEY` aggiunto in `index.ts` — server esce con `process.exit(1)` se mancante
 - Confermato: `toDataStreamResponse()` non esiste in `ai@6.0.175` — metodo corretto è `toUIMessageStreamResponse()`
 - Confermato: `useCompletion` da `@ai-sdk/react` compatibile con OpenTUI/Bun (nessuna browser API)
@@ -50,7 +50,7 @@ In progress — scaffolding
 - Schema Prisma definito: `Session` (id, title, createdAt, updatedAt) + `Message` (id, sessionId, role, model, parts Json, metadata Json?, createdAt)
 - `prisma.config.ts` configurato per Prisma Postgres con `env('DATABASE_URL')`
 - `src/index.ts`: esporta `db` (PrismaClient + PrismaPg adapter) e re-esporta tipi generati
-- `@monocode/db` aggiunto come `dependency` in `@monocode/server` e `devDependency` in `@monocode/cli`
+- `@monocode/db` aggiunto come `dependency` in `@monocode/server` e `devDependency` in `@monocode-ai/cli`
 - `trustedDependencies: ["prisma"]` aggiunto al root `package.json` per bypassare il preinstall Node.js version check
 - Workspace installato con `bun install --ignore-scripts --force`
 - `bunx --bun prisma db push` — schema sincronizzato con Prisma Postgres ✅
@@ -98,7 +98,7 @@ In progress — scaffolding
 
 ## Completed (sessione corrente — tool typing refactor)
 
-- Tool typing semplificato in `@monocode/ai`: aggiunta `ToolCall` esplicita (`toolName` + `input`) al posto del dispatcher generico basato su `keyof typeof registry`
+- Tool typing semplificato in `@monocode-ai/ai`: aggiunta `ToolCall` esplicita (`toolName` + `input`) al posto del dispatcher generico basato su `keyof typeof registry`
 - `executeTool` spostato in `packages/ai/src/tools/executor.ts` con `switch` leggibile e validazione Zod per tool
 - `definitions.ts` reso esplicito: costruisce `codingTools` tool-per-tool senza `Object.fromEntries` e senza cast
 - `CodingUITools` reso esplicito in `packages/ai/src/types.ts`, senza derivazioni da `typeof registry`
@@ -116,11 +116,11 @@ In progress — scaffolding
 - `usage.promptTokens` / `usage.completionTokens` aggiornati a `usage.inputTokens` / `usage.outputTokens` per AI SDK v6
 - Persistenza reasoning assistant aggiornata a `reasoningText`, compatibile con JSON Prisma senza cast aggiuntivi
 - `packages/ai/src/messages/schemas.ts` aggiunto: `uiMessageSchema` valida il boundary HTTP minimo (`id`, `role`, `parts`) e `chatRequestSchema` combina `messages` + `modeSchema`
-- `sessions.ts` ora importa `chatRequestSchema` da `@monocode/ai`, mantenendo la route focalizzata sul flow HTTP/streaming
+- `sessions.ts` ora importa `chatRequestSchema` da `@monocode-ai/ai`, mantenendo la route focalizzata sul flow HTTP/streaming
 - `apps/server/tsconfig.json` ora estende `../../tsconfig.json`, include `types: ["bun"]` e `include: ["src"]`; risolto il warning Fallow sulla chain tsconfig
 - `PartTool` semplificato: rendering per stato convertito a `switch (part.state)` e rimosso il cast manuale per `errorText`
-- `storedCodingMessagesSchema` aggiunto in `@monocode/ai` per validare/convertire messaggi persistiti DB → `CodingUIMessage[]`; rimossi i cast `CodingUIMessage["role"]` e `CodingUIMessage["parts"]` da `ChatScreen`
-- `storedMessagePartsSchema` aggiunto in `@monocode/ai`: valida un array di part con `type: string` e campi extra JSON-safe; `sessions.ts` lo usa prima di salvare `lastUserMsg.parts` su Prisma JSON, rimuovendo il cast `as Prisma.InputJsonArray`
+- `storedCodingMessagesSchema` aggiunto in `@monocode-ai/ai` per validare/convertire messaggi persistiti DB → `CodingUIMessage[]`; rimossi i cast `CodingUIMessage["role"]` e `CodingUIMessage["parts"]` da `ChatScreen`
+- `storedMessagePartsSchema` aggiunto in `@monocode-ai/ai`: valida un array di part con `type: string` e campi extra JSON-safe; `sessions.ts` lo usa prima di salvare `lastUserMsg.parts` su Prisma JSON, rimuovendo il cast `as Prisma.InputJsonArray`
 
 ## Completed (sessione corrente — CLI theme)
 
@@ -192,7 +192,7 @@ In progress — scaffolding
 - Il client RPC della CLI punta al default locale `http://localhost:3001`; la configurazione dinamica resta fuori scope finché il workflow reale non è definito.
 - I client RPC devono usare il subpath type-only `@monocode/server/rpc`; questo mantiene la type-safety Hono senza includere il server nel bundle/runtime della CLI.
 - Coding tools: niente registry generato per ora. `schemas.ts`, `definitions.ts`, `executor.ts`, `calls.ts` e `types.ts` sono espliciti; la duplicazione è accettata per evitare type gymnastics e mantenere il flow comprensibile.
-- Modes: `modeSchema` in `@monocode/ai` è la source of truth runtime/type per i mode; server e CLI devono importare quello invece di duplicare `z.enum(["build", "plan"])` o literal union locali.
+- Modes: `modeSchema` in `@monocode-ai/ai` è la source of truth runtime/type per i mode; server e CLI devono importare quello invece di duplicare `z.enum(["build", "plan"])` o literal union locali.
 - CLI theme: colori centralizzati in `apps/cli/src/theme.ts` e accessibili via `ThemeProvider`/`useTheme()`; la selezione dinamica è pronta tramite `selectTheme(themeName)`, ma non esiste ancora una UI/config per cambiarla. Ogni tema può definire `theme.modes[mode]` per accenti mode-specific senza trasformare le mode in temi globali separati.
 - `Message.mode` è un campo Prisma dedicato, non `metadata`: è dato di dominio, serve al rendering stabile della chat e deve restare queryabile.
 - Slash command architecture: registry statico in `commands/commands.ts`, runtime effects in `CommandRuntimeProvider`, selection state in `useCommandMenu`, direct context consumption in `CommandMenu`. Questo evita prop drilling e mantiene screen/layout separati dal dispatch comandi.
@@ -270,7 +270,7 @@ In progress — scaffolding
 - `DefaultChatTransport` usato nel client per il trasporto HTTP (`transport: new DefaultChatTransport({ api })`)
 - `sendMessage({ text })` invia i messaggi; `messages` (con `parts`) renderizza la cronologia
 - Componente `ChatInput` creato (`apps/cli/src/components/chat-input.tsx`) — uguale a `HomeTextarea` ma chiama `instanceRef.current?.clear()` dopo submit
-- `ai` aggiunto come dipendenza diretta in `@monocode/cli` (richiesto da `DefaultChatTransport`)
+- `ai` aggiunto come dipendenza diretta in `@monocode-ai/cli` (richiesto da `DefaultChatTransport`)
 - TUI Dialog composition aggiunta: `DialogProvider` gestisce stato via context, `DialogOverlay` renderizza il fullscreen dark overlay, `Dialog` espone title + body slot e usa colori theme centralizzati
 - Comando `/dialog` aggiunto al command registry: apre un dialog di test legato al workflow Sessions sopra la schermata corrente, senza navigare a `/sessions`
 - `DialogProvider` ora intercetta `Esc` quando un dialog è aperto e lo chiude tramite stato context
@@ -392,7 +392,9 @@ In progress — scaffolding
 - `FloatingListMenu` estratto come render primitive condivisa per popup inline: possiede shell assoluta, bordo, `<scrollbox>`, selected row e hover selection; `CommandMenu` e `FileReferenceMenu` ora forniscono solo contenuto riga specifico.
 - `bun run check` rieseguito dopo `FloatingListMenu`: fallisce ancora solo sugli issue preesistenti già tracciati (`unused files`, dipendenza `pg` inutilizzata).
 - `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito dopo `FloatingListMenu`: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
-- Workspace path normalization fix: i tool filesystem ora risolvono i path contro la directory di lavoro del processo tool (`process.cwd()`), accettano riferimenti con prefisso `@` e bloccano path escape. `FileReferenceMenu` usa la stessa root tramite `@monocode/ai`, quindi i path mostrati all'utente e quelli letti dai tool sono allineati. Override esplicito disponibile con `MONOCODE_WORKSPACE_ROOT` per wrapper di sviluppo o launcher futuri.
+- Workspace path normalization fix: i tool filesystem ora risolvono i path contro la directory di lavoro del processo tool (`process.cwd()`), accettano riferimenti con prefisso `@` e bloccano path escape. `FileReferenceMenu` usa la stessa root tramite `@monocode-ai/ai`, quindi i path mostrati all'utente e quelli letti dai tool sono allineati. Override esplicito disponibile con `MONOCODE_WORKSPACE_ROOT` per wrapper di sviluppo o launcher futuri.
+- Preparazione publish npm avviata: `@monocode-ai/ai` e `@monocode-ai/cli` usano lo scope npm disponibile `monocode-ai`. La dipendenza runtime della CLI da `@monocode-ai/ai` è `^0.0.1`, così il pacchetto pubblicato sarà installabile fuori dal monorepo dopo la publish di `@monocode-ai/ai@0.0.1`.
+- Footer web aggiornato: rimossa la scia/strip di particelle (`footer-dots`) dal markup e dal CSS. `bun run --cwd apps/web build` passa; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati (`unused files`, dipendenza `pg` inutilizzata).
 - Script root `bun run cli` aggiornato per preservare la directory da cui viene lanciato il wrapper: passa `MONOCODE_WORKSPACE_ROOT="$PWD"` prima di usare `--cwd apps/cli`, evitando che il workspace diventi accidentalmente la cartella del package CLI durante lo sviluppo.
 - Rendering Markdown assistant aggiunto con il componente nativo OpenTUI `<markdown>`: `MarkdownText` centralizza `SyntaxStyle` theme-aware e opzioni tabelle, `PartText` resta plain text di default per i messaggi user e abilita Markdown solo sulle parti assistant.
 - `CommandTextarea` rimosso: `Input` possiede direttamente la textarea e `MenuLayer` renderizza menu context-driven.
@@ -859,8 +861,8 @@ In progress — scaffolding
 ## Completed (sessione corrente — distribuzione locale CLI)
 
 - `apps/cli/bin/monocode.ts` aggiunto come bin wrapper con shebang Bun; importa l'entrypoint TUI esistente senza cambiare directory di lavoro, così `process.cwd()` resta il repository da cui viene lanciato `monocode`.
-- `apps/cli/package.json` espone il comando globale `monocode` tramite il campo `bin` del package `@monocode/cli`.
-- `bun link` eseguito da `apps/cli`: package `@monocode/cli` registrato come linkabile e comando `monocode` risolto in `/Users/magnulemme/.bun/bin/monocode`.
+- `apps/cli/package.json` espone il comando globale `monocode` tramite il campo `bin` del package `@monocode-ai/cli`.
+- `bun link` eseguito da `apps/cli`: package `@monocode-ai/cli` registrato come linkabile e comando `monocode` risolto in `/Users/magnulemme/.bun/bin/monocode`.
 - Primo tentativo con `bun link --global` ha richiesto il campo `name` nel manifest globale Bun; aggiunto `name: "bun-global"` a `~/.bun/install/global/package.json`, poi l'accidentale link `bun-global` è stato rimosso con `bun unlink` nello store globale.
 - `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`unused files`, dipendenze inutilizzate).
 - `bunx tsc --noEmit -p apps/cli/tsconfig.json` rieseguito: fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto.
@@ -916,8 +918,8 @@ In progress — scaffolding
 - `vercel.json` aggiunto alla root: install con `bun install --frozen-lockfile`, build landing con `bun run --cwd apps/web build`, output `apps/web/dist`, framework Vite.
 - `api/[[...route]].ts` aggiunto come adapter Vercel: importa l'app Hono da `apps/server/src/app.ts`, la monta sotto `/api` e esporta handler `GET`/`POST` con runtime `nodejs` e `maxDuration = 60`.
 - CLI production-first: `apps/cli/src/lib/client.ts` usa `MONOCODE_SERVER_URL` solo come override e default provvisorio `https://monocode.vercel.app/api` da aggiornare dopo il primo deploy se Vercel assegna un URL diverso.
-- `@monocode/cli` e `@monocode/ai` preparati per publish pubblico npm con `private: false`, `files` e `publishConfig.access = "public"`.
-- Landing aggiornata con CTA install `bunx @monocode/cli`, nuova sezione `Install`, navbar ancorata a install/benefits/stack e copy stats coerente con server Vercel + CLI.
+- `@monocode-ai/cli` e `@monocode-ai/ai` preparati per publish pubblico npm con `private: false`, `files` e `publishConfig.access = "public"`.
+- Landing aggiornata con CTA install `bunx @monocode-ai/cli`, nuova sezione `Install`, navbar ancorata a install/benefits/stack e copy stats coerente con server Vercel + CLI.
 - Decisione deployment: niente dominio custom; si usa l'URL generato da Vercel. La CLI pubblicata deve puntare di default al server live, non a `localhost`.
 - `.fallowrc.json` aggiornato con ignore `api/**` perché le API Vercel sono raggiunte tramite convenzione filesystem e non tramite import applicativi; il file contiene anche una suppression commentata con la motivazione.
 - `bun run --cwd apps/web build` passa con Vite production build.
@@ -925,8 +927,8 @@ In progress — scaffolding
 - `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; durante la risoluzione `bunx` ha salvato `bun.lock` nel worktree corrente.
 - `bun build apps/cli/src/index.tsx --target bun` passa dopo il cambio namespace `@monocode/*` e il default server URL production-first.
 - `bun publish --dry-run` in `apps/cli` prepara il package ma si ferma su autenticazione npm mancante, come atteso; il contenuto packed non include più `src/scripts/test-chat.ts` dopo la restrizione del campo `files`.
-- `bun pm pack` eseguito per `@monocode/cli`: il manifest packed riscrive `@monocode/ai` da `workspace:*` a `0.0.1`, quindi l'ordine publish deve essere `@monocode/ai` prima e `@monocode/cli` dopo.
-- `bun pm pack` eseguito anche per `@monocode/ai`: tarball generato correttamente con solo `src` e `package.json`.
+- `bun pm pack` eseguito per `@monocode-ai/cli`: il manifest packed include la dipendenza runtime `@monocode-ai/ai`, quindi l'ordine publish deve essere `@monocode-ai/ai` prima e `@monocode-ai/cli` dopo.
+- `bun pm pack` eseguito anche per `@monocode-ai/ai`: tarball generato correttamente con solo `src` e `package.json`.
 - `bun install --frozen-lockfile --ignore-scripts` passa dopo le modifiche ai manifest publish.
 - `bun run check` rieseguito: il nuovo file Vercel non è più segnalato; restano solo gli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
 
@@ -946,7 +948,7 @@ In progress — scaffolding
 - Landing web sostituita con pagina dark monochrome ispirata al brief Mindloop ma adattata a Monocode: navbar fixed, hero video, sezioni Search/Mission/Solution, CTA con video HLS e footer Monocode mantenuto.
 - Dipendenze web aggiornate: aggiunti `framer-motion`, `hls.js`, `@fontsource/inter`, `@fontsource/instrument-serif`, `tailwindcss-animate`; rimosso `motion` non più usato.
 - Design system web aggiornato in `index.css` con variabili HSL richieste, font Inter/Instrument Serif locali, classe globale `.liquid-glass` e plugin `tailwindcss-animate` per Tailwind CSS 4.
-- Componenti shadcn-style minimali aggiunti per `Button` e utility `cn`; il form email della hero è stato sostituito da due CTA: comando install copiabile `bunx @monocode/cli` e link Docs verso GitHub.
+- Componenti shadcn-style minimali aggiunti per `Button` e utility `cn`; il form email della hero è stato sostituito da due CTA: comando install copiabile `bunx @monocode-ai/cli` e link Docs verso GitHub.
 - Navbar resa minimale: logo Monocode a sinistra, icona GitHub progetto e link Docs a destra; rimossi i link alle sezioni dalla navbar. La CTA finale ora riusa le stesse azioni install copiabile + Docs della hero.
 - Logo navbar e CTA finale aggiornati per usare lo stesso `Logo` SVG del footer dentro un mark circolare bianco; la riga social proof ora usa tre avatar SVG locali in `apps/web/public/` invece delle lettere `M/C/D`.
 - Asset PNG mancanti nel repo sostituiti con avatar/icon geometrici CSS inline per evitare 404 mantenendo il tema pure black/white.
@@ -956,3 +958,33 @@ In progress — scaffolding
 - Pagina `/docs` aggiunta dentro `apps/web/src/App.tsx`: view statica minimale shadcn-style con hero docs, install command, sidebar, quick start, configuration, commands e core concepts. Le CTA Docs della landing puntano ora a `/docs` invece che al repository GitHub.
 - `bun run --cwd apps/web build` passa dopo la pagina docs; resta il warning Vite preesistente sul chunk JS sopra 500 kB.
 - `bun run check` rieseguito dopo la pagina docs: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+- Default production URL della CLI aggiornato per npm publish: `apps/cli/src/lib/client.ts` ora punta a `https://monocode-server.vercel.app/api`, mantenendo `MONOCODE_SERVER_URL` come override esplicito per sviluppo/debug.
+- `bun build apps/cli/src/index.tsx --target bun` passa dopo il cambio URL production.
+- `bun pm pack --dry-run` in `apps/cli` passa e include `src/lib/client.ts` aggiornato nel tarball `monocode-cli-0.0.1.tgz`.
+- `bun run check` rieseguito dopo il cambio URL production: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+- Scope npm aggiornato perché `monocode` era già occupato e l'organizzazione effettiva è `monocode-ai`: i package pubblici sono ora `@monocode-ai/ai` e `@monocode-ai/cli`, con import runtime server/CLI aggiornati e CTA install web/docs su `bunx @monocode-ai/cli`.
+- `bun install --ignore-scripts` rieseguito dopo il rename finale dello scope, aggiornando `bun.lock` e i link workspace.
+- `bun pm pack --dry-run` passa per `@monocode-ai/ai` e `@monocode-ai/cli`; `bun build ./api/index.ts "./api/[...route].ts" --target node` passa; `bun run --cwd apps/web build` passa con il consueto warning Vite chunk size.
+- Publish npm tentata per `@monocode-ai/ai@0.0.1` usando un `.npmrc` temporaneo fuori repo e poi rimosso: npm risponde ancora `403` perché il token fornito non ha bypass 2FA per publish oppure richiede OTP. La publish resta bloccata finché non viene creato un granular access token con bypass 2FA o fornito un OTP valido.
+- Publish npm ritentata con un nuovo token temporaneo per `@monocode-ai/ai@0.0.1`: `bun publish` raggiunge il registry ma riceve ancora `403` con richiesta di 2FA/bypass; `npm publish` locale fallisce prima di risolvere la config con `Exit prior to config file resolving`. Nessun token è stato scritto nella repo; il `.npmrc` temporaneo fuori repo è stato rimosso dopo il tentativo.
+- Publish npm riuscita usando una `HOME` temporanea fuori repo contenente solo `.npmrc` e poi rimossa: `@monocode-ai/ai@0.0.1` pubblicato per primo, poi `@monocode-ai/cli@0.0.1`. `bun pm view @monocode-ai/ai version` e `bun pm view @monocode-ai/cli version` confermano `0.0.1`.
+
+## Completed (sessione corrente — Clerk env Vercel)
+
+- Audit env Clerk completato: il server e il middleware leggono `CLERK_SECRET_KEY` e `CLERK_PUBLISHABLE_KEY`; la CLI PKCE legge solo `CLERK_FRONTEND_API` e `CLERK_OAUTH_CLIENT_ID`.
+- `.env.example` root aggiunto per deploy/server con `GROQ_API_KEY`, `DATABASE_URL`, `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY` e le env CLI opzionali.
+- `apps/cli/.env.example` ridotto alle sole env CLI/local override e aggiornato al default production `https://monocode-server.vercel.app/api`, evitando di suggerire chiavi server dentro il package CLI.
+- `architecture.md` documenta che su Vercel bisogna aggiungere `CLERK_PUBLISHABLE_KEY` esattamente con questo nome, senza usare `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, perché il middleware Hono legge la env backend.
+- Verifiche: `bun build ./api/index.ts "./api/[...route].ts" --target node` fallisce perché Bun richiede `--outdir` con entry point multipli; la stessa build con `--outdir` temporaneo fuori repo passa. `bun run --cwd apps/web build` passa con il warning chunk size preesistente. `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — npm CLI auth smoke test)
+
+- Registry npm verificato: `bun pm view @monocode-ai/ai version` e `bun pm view @monocode-ai/cli version` restituiscono entrambi `0.0.1`.
+- Tarball pubblicato `@monocode-ai/cli@0.0.1` scaricato e ispezionato fuori repo: il bin è `monocode -> ./bin/monocode.ts`, `src/lib/client.ts` punta di default a `https://monocode-server.vercel.app/api`, `/login` usa issuer `CLERK_FRONTEND_API`, client id `CLERK_OAUTH_CLIENT_ID`, scope `openid email profile offline_access`, PKCE S256 e redirect fisso `http://127.0.0.1:8976/oauth/callback`.
+- Tarball pubblicato verificato per header auth: `GET /sessions`, `POST /sessions`, `GET /sessions/:sessionId/messages` e `POST /sessions/:sessionId/messages` usano `getAuthHeaders()`, che invia `Authorization: Bearer <accessToken>` con schema `Bearer` maiuscolo.
+- Smoke test `bunx @monocode-ai/cli@0.0.1` con HOME temporanea fuori repo: il package viene installato dal registry, le dipendenze si risolvono e la TUI parte correttamente; il processo è stato fermato dal timeout del test.
+- Live check Vercel: `GET https://monocode-server.vercel.app/api/sessions` e `GET https://monocode-server.vercel.app/api` rispondono `500 FUNCTION_INVOCATION_FAILED` invece del `401` atteso per richiesta non autenticata, quindi il problema attivo è nel server production prima del test PKCE end-to-end.
+- Riproduzione locale confermata: con `CLERK_PUBLISHABLE_KEY` vuota, `@clerk/backend` lancia `Publishable key is missing` dentro `authenticateRequest()` prima dei log debug precedenti.
+- Middleware Clerk aggiornato: `AUTH_DEBUG=1` ora logga anche presenza sicura di `CLERK_SECRET_KEY`/`CLERK_PUBLISHABLE_KEY` e intercetta errori di `authenticateRequest()` senza stampare token o segreti, restituendo JSON `{"error":"Authentication failed"}` invece di lasciare uscire l'eccezione.
+- Verifiche server: `bunx tsc --noEmit -p apps/server/tsconfig.json` passa; `bun build ./api/index.ts "./api/[...route].ts" --target node --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-api-auth-debug-check-2` passa; riproduzione locale con env Clerk vuote mostra il nuovo log safe e risposta 500 controllata.
+- `bun run check` rieseguito dopo la modifica middleware: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).

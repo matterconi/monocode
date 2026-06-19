@@ -87,7 +87,7 @@
 
 **Package:** `@matcode/cli`, `@matcode/db`, `packages/shared`
 
-**Symptom:** `bun run check` fallisce con Fallow: file non raggiungibili (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, `packages/db/prisma.config.ts`, `packages/db/scripts/verify.ts`, `packages/shared/src/index.ts`), dipendenze workspace segnalate come inutilizzate (`@monocode/ai`, `@monocode/db`, `@monocode/server`) e dipendenza `pg` inutilizzata in `packages/db/package.json`.
+**Symptom:** `bun run check` fallisce con Fallow: file non raggiungibili (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, `packages/db/prisma.config.ts`, `packages/db/scripts/verify.ts`, `packages/shared/src/index.ts`), dipendenze workspace segnalate come inutilizzate (`@monocode-ai/ai`, `@monocode/db`, `@monocode/server`) e dipendenza `pg` inutilizzata in `packages/db/package.json`.
 
 **Cause:** Alcuni file/script non sono raggiungibili dagli entry point configurati e `pg` non viene importato direttamente.
 
@@ -214,3 +214,32 @@
 **Cause:** Il lifecycle script di Prisma vede una versione Node non supportata nell'ambiente corrente, anche se il workflow usa Bun. Le sessioni precedenti e quella corrente usano `bun install --ignore-scripts` come workaround operativo.
 
 **Fix needed:** Allineare la versione Node disponibile nell'ambiente o evitare che il preinstall Prisma venga eseguito nel workflow Bun standard; continuare a eseguire esplicitamente `bun run --cwd packages/db generate` quando serve rigenerare il client.
+
+---
+
+## [OPEN] Multi-entry `bun build` now requires `--outdir`
+
+**Package:** Vercel API handlers
+
+**Command:** `bun build ./api/index.ts "./api/[...route].ts" --target node`
+
+**Symptom:** Bun exits with `Must use --outdir when specifying more than one entry point.`
+
+**Cause:** The current Bun CLI requires an explicit output directory for multi-entry builds.
+
+**Workaround:** Use a temp output directory outside the repo, for example `bun build ./api/index.ts "./api/[...route].ts" --target node --outdir /tmp/monocode-api-check`.
+
+---
+
+## [OPEN] Production API returns Vercel 500 before auth challenge
+
+**Package:** `@monocode/server`
+**Files:** `apps/server/src/middleware/clerk-auth.ts`, `api/index.ts`, `api/[...route].ts`
+
+**Symptom:** `GET https://monocode-server.vercel.app/api/sessions` and `GET https://monocode-server.vercel.app/api` return `500 FUNCTION_INVOCATION_FAILED` instead of a controlled `401`/JSON response for unauthenticated requests.
+
+**Likely cause:** The live Vercel function is failing inside Clerk authentication before route handling. Local reproduction with an empty `CLERK_PUBLISHABLE_KEY` throws `Publishable key is missing` from `@clerk/backend.authenticateRequest()`, matching the suspected production failure mode.
+
+**Mitigation added:** The Clerk middleware now wraps `authenticateRequest()` and, when `AUTH_DEBUG=1`, logs method/path, Authorization presence/scheme, safe env presence booleans, and error name/message without printing tokens or secret values.
+
+**Fix still needed:** Redeploy the server with this middleware, enable `AUTH_DEBUG=1` temporarily if needed, then verify whether the production deployment sees `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` in the correct Vercel environment/project/deployment.
