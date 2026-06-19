@@ -299,3 +299,17 @@
 **Cause:** The root `package.json` declares `"type": "module"`, but Node uses the nearest `package.json`. For `/var/task/apps/server/src/app.js`, that nearest boundary is `apps/server/package.json`, which did not declare ESM, so Node treated Vercel's emitted `.js` file as CommonJS.
 
 **Fix:** Server-side workspace package boundaries now declare `"type": "module"`, and their runtime relative imports/exports use `.js` specifiers so Node ESM can resolve the transpiled files inside Vercel functions.
+
+---
+
+## [FIXED] Vercel runtime resolves `@monocode/db` to TypeScript source
+
+**Package:** `@monocode/db`, Vercel API runtime
+
+**Files:** `packages/db/package.json`, `package.json`, `.gitignore`
+
+**Symptom:** Vercel `GET /api/sessions` failed with `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/apps/server/node_modules/@monocode/db/src/index.ts' imported from /var/task/apps/server/src/routes/sessions.js`.
+
+**Cause:** `apps/server/src/routes/sessions.ts` correctly imports `@monocode/db` as a workspace package, but `packages/db/package.json` exported `".": "./src/index.ts"`. Vercel preserved the bare package import in the emitted server route, then Node resolved the workspace package export inside `apps/server/node_modules` and tried to load TypeScript source from `node_modules` at runtime.
+
+**Fix:** `@monocode/db` now keeps TypeScript source as the `types` condition and exposes `./dist/index.js` as the runtime `import` entry. Root `postinstall` runs Prisma generate and then `bun run --cwd packages/db build`, so Vercel's `bun install --frozen-lockfile` creates the JS runtime entry before functions execute.
