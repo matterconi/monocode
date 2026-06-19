@@ -32,7 +32,7 @@
 - Plain text stream: `toTextStreamResponse()` — compatibile con lettura manuale `res.body.getReader()`
 - Client-side streaming in OpenTUI: `useCompletion` da `@ai-sdk/react` — compatibile con Bun (nessuna browser API), si aspetta endpoint POST con `{ prompt: string }` nel body
 - Coding tool definitions stay explicit: prefer readable `ToolCall` unions, explicit `CodingUITools`, and `switch` dispatch in `executor.ts` over registry-derived generics (`typeof registry`, `keyof typeof registry`) or casts.
-- Message boundary schemas live in `@monocode/ai/messages`: use `chatRequestSchema`, `storedMessagePartsSchema`, and `storedCodingMessagesSchema` instead of inline casts between AI SDK messages, HTTP JSON, and Prisma JSON.
+- Message boundary schemas live in `@monocode-ai/ai/messages`: use `chatRequestSchema`, `storedMessagePartsSchema`, and `storedCodingMessagesSchema` instead of inline casts between AI SDK messages, HTTP JSON, and Prisma JSON.
 
 ## OpenTUI React
 

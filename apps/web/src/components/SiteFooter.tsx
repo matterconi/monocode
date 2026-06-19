@@ -23,10 +23,6 @@ const socialLinks = [
 export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <div className="footer-dots" aria-hidden="true">
-        <div className="footer-dots__line" />
-      </div>
-
       <div className="site-footer__inner">
         <div className="site-footer__top">
           <h2>

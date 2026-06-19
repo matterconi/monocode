@@ -1,5 +1,5 @@
 import type { UIMessage } from "ai"
-import type { ModeName, ModelId } from "@monocode/ai"
+import type { ModeName, ModelId } from "@monocode-ai/ai"
 import { ChatMessage } from "./chat-message"
 import { useTheme } from "../../providers/theme"
 

@@ -14,7 +14,7 @@ Monocode is a full-stack Bun monorepo with a lightweight Hono HTTP server, a ter
 ## Packages
 
 - `@monocode/server` — Hono HTTP server, port 3001
-- `@monocode/cli` — OpenTUI React terminal welcome screen
+- `@monocode-ai/cli` — OpenTUI React terminal welcome screen
 - `@monocode/web` — Vite React landing page, port 5173 in dev
 
 ## Current State

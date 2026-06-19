@@ -8,7 +8,7 @@ import {
   type ModeName,
   type ModelId,
   type ModelSettingOverrides,
-} from "@monocode/ai"
+} from "@monocode-ai/ai"
 import { getAuthHeaders } from "../lib/auth/request-headers"
 import { client } from "../lib/client"
 import { useAgent } from "../providers/agent"

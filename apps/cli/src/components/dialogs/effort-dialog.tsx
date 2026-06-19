@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react"
-import type { ReasoningEffort } from "@monocode/ai"
+import type { ReasoningEffort } from "@monocode-ai/ai"
 import { useAgent } from "../../providers/agent"
 import { useDialog } from "../../providers/dialog"
 import { useTheme } from "../../providers/theme"

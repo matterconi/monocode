@@ -217,6 +217,19 @@
 
 ---
 
+## [FIXED] Vercel Bun install cannot resolve `@monocode-ai/ai` workspace
+
+**Package:** workspace root / `@monocode-ai/ai`
+**Files:** `package.json`, `apps/server/package.json`, `packages/ai/package.json`, `bun.lock`
+
+**Symptom:** Vercel falliva durante `bun install --frozen-lockfile` con `Workspace dependency "@monocode-ai/ai" not found`.
+
+**Cause:** Il commit di deploy risolveva `@monocode-ai/ai` come workspace dal root/lock, ma il manifest del workspace `packages/ai/package.json` non era ancora allineato nel commit remoto. Localmente il worktree passava perché il rename a `@monocode-ai/ai` era presente ma non incluso nel commit `51b64c1`.
+
+**Fix:** Mantenere il grafo workspace coerente: `packages/ai/package.json` deve avere `name: "@monocode-ai/ai"`, mentre root e `apps/server` continuano a usare `@monocode-ai/ai: "workspace:*"`. Verificato con `bun install --frozen-lockfile` dalla root reale.
+
+---
+
 ## [OPEN] Multi-entry `bun build` now requires `--outdir`
 
 **Package:** Vercel API handlers

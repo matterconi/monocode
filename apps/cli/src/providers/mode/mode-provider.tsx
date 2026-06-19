@@ -1,6 +1,6 @@
 
 import { createContext, useCallback, useContext, useState } from "react"
-import { nextMode, type ModeName } from "@monocode/ai"
+import { nextMode, type ModeName } from "@monocode-ai/ai"
 
 interface ModeContextValue {
   mode: ModeName

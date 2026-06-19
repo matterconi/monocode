@@ -8,7 +8,7 @@ import {
   createCodingAgentStream,
   defaultTitleModelId,
   storedMessagePartsSchema,
-} from "@monocode/ai"
+} from "@monocode-ai/ai"
 import { resolveLanguageModelRuntime, UnsupportedModelSettingError } from "../ai/model-resolver"
 import type { ClerkAuth, ClerkAuthEnv } from "../middleware/clerk-auth"
 

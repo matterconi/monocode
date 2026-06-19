@@ -1,5 +1,5 @@
 import { isTextUIPart, isReasoningUIPart, isToolUIPart, type UIMessage } from "ai"
-import { modelDefinitions, type CodingUIMessage, type ModeName, type ModelId } from "@monocode/ai"
+import { modelDefinitions, type CodingUIMessage, type ModeName, type ModelId } from "@monocode-ai/ai"
 import { ChatPanel } from "./chat-panel"
 import { PartText } from "./part-text"
 import { PartReasoning } from "./part-reasoning"

@@ -21,7 +21,7 @@ const missionVideo =
 const solutionVideo =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260325_125119_8e5ae31c-0021-4396-bc08-f7aebeb877a2.mp4";
 const ctaHlsVideo = "https://stream.mux.com/8wrHPCX2dC3msyYU9ObwqNdm00u3ViXvOSHUMRYSEe5Q.m3u8";
-const installCommand = "bunx @monocode/cli";
+const installCommand = "bunx @monocode-ai/cli";
 const avatars = ["/avatar-1.svg", "/avatar-2.svg", "/avatar-3.svg"];
 
 const docsSections = [
@@ -455,7 +455,7 @@ function DocsPage() {
               <p className="text-sm font-medium text-muted-foreground">01</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.5px]">Quick start</h2>
             </div>
-            <CodeBlock>{`cd your-project\nbunx @monocode/cli`}</CodeBlock>
+            <CodeBlock>{`cd your-project\nbunx @monocode-ai/cli`}</CodeBlock>
             <p className="text-sm leading-6 text-muted-foreground">
               Monocode runs from the current working directory. That directory becomes the workspace boundary for file references and local tool execution.
             </p>

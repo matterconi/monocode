@@ -1,5 +1,5 @@
 import path from "path"
-import { getWorkspaceRoot } from "@monocode/ai"
+import { getWorkspaceRoot } from "@monocode-ai/ai"
 import { readdir } from "fs/promises"
 
 export interface FileReferenceItem {
