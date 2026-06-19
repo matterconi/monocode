@@ -5,11 +5,11 @@ export type AuthConfig = {
 }
 
 const defaultScope = "openid email profile offline_access"
+const defaultClerkFrontendApi = "https://diverse-caribou-7.clerk.accounts.dev"
+const defaultClerkOauthClientId = "DrkIdPXABI01nqZY"
 
-function requireEnv(name: string) {
-  const value = process.env[name]
-  if (!value?.trim()) throw new Error(`${name} is required for /login`)
-  return value.trim()
+function envOrDefault(name: string, fallback: string) {
+  return process.env[name]?.trim() || fallback
 }
 
 function normalizeIssuerUrl(frontendApi: string) {
@@ -25,8 +25,8 @@ function normalizeIssuerUrl(frontendApi: string) {
 
 export function getAuthConfig(): AuthConfig {
   return {
-    clientId: requireEnv("CLERK_OAUTH_CLIENT_ID"),
-    issuerUrl: normalizeIssuerUrl(requireEnv("CLERK_FRONTEND_API")),
+    clientId: envOrDefault("CLERK_OAUTH_CLIENT_ID", defaultClerkOauthClientId),
+    issuerUrl: normalizeIssuerUrl(envOrDefault("CLERK_FRONTEND_API", defaultClerkFrontendApi)),
     scope: defaultScope,
   }
 }

@@ -190,6 +190,62 @@
 
 ---
 
+## [OPEN] npm publish token shared in chat must be rotated
+
+**Package:** npm / `@monocode-ai/cli`
+
+**Symptom:** Il token npm fornito per pubblicare `@monocode-ai/cli@0.0.2` è stato condiviso in chat. Il publish è poi riuscito usando `pnpm` via `bunx` con config npm temporanea.
+
+**Cause:** Il token va considerato compromesso anche se non è stato salvato in file di progetto; è stato usato solo tramite env/config temporanea cancellata subito.
+
+**Fix needed:** Revocare/rigenerare il token npm con permessi di publish sullo scope `@monocode-ai`.
+
+---
+
+## [OPEN] Prisma database URL shared in chat must be rotated
+
+**Package:** database / Prisma Postgres
+
+**Symptom:** La connection string Prisma Postgres è stata condivisa in chat per eseguire la pulizia di `Session` e `Message`.
+
+**Cause:** Il DB locale non aveva `DATABASE_URL` configurato e la stringa è stata fornita manualmente per completare l'operazione.
+
+**Fix needed:** Ruotare/rigenerare le credenziali database o sostituire la connection string esposta appena possibile.
+
+---
+
+## [FIXED] Chat bootstrap fails parsing persisted legacy models
+
+**Package:** `@monocode-ai/ai`, `@monocode-ai/cli`
+
+**Files:** `packages/ai/src/messages/schemas.ts`, `apps/cli/src/hooks/use-session-chat.ts`
+
+**Symptom:** Aprendo una chat, il bootstrap falliva in `storedCodingMessagesSchema.parse(await res.json())` con errore percepito come `Failed to parse JSON`.
+
+**Cause:** Il server restituisce un array di messaggi DB, ma alcuni messaggi storici possono avere `model` non più presente nel registry corrente, ad esempio `anthropic/claude-sonnet-4-6`. Lo schema client validava `model` con `modelSchema`, quindi falliva durante l'hydration. Inoltre il client non controllava `res.ok`, quindi eventuali `401/404/500` venivano mascherati dallo stesso punto di parse.
+
+**Fix:** Lo schema persisted-message accetta solo modelli registry-validi e omette i valori legacy/ignoti invece di fallire o mostrare un modello falso. Il bootstrap chat controlla `res.ok` prima di leggere JSON e mostra un toast con l'errore reale del server.
+
+**Operational note:** Pulire il DB può aggirare il sintomo in test, ma non è la soluzione robusta per produzione. La CLI pubblicata richiede una nuova release del package AI e poi una nuova patch CLI per includere il fix.
+
+---
+
+## [FIXED] Vercel returns text 404 for session messages nested route
+
+**Package:** Vercel API / `@monocode/server`
+
+**Files:** `api/sessions/[sessionId]/messages.ts`, `api/[...route].ts`
+
+**Symptom:** Anche con DB `Session`/`Message` vuoto, la CLI pubblicata falliva in `await res.json()` durante `GET /api/sessions/:sessionId/messages` con `Failed to parse JSON`. I log Vercel mostravano solo `/api/sessions` perché la nested route non entrava nell'app Hono.
+
+**Cause:** In produzione `GET /api/sessions/test_session/messages` rispondeva direttamente da Vercel con `404 text/plain` (`The page could not be found`) invece di raggiungere la catch-all function e tornare JSON Hono.
+
+**Fix:** Aggiunta una function Vercel esplicita `api/sessions/[sessionId]/messages.ts` che delega alla stessa app Hono e copre `GET`/`POST /api/sessions/:sessionId/messages` usati dalla CLI pubblicata.
+
+**Operational note:** Serve redeploy Vercel per rendere disponibile la route. Dopo il deploy, una richiesta non autenticata a `/api/sessions/test_session/messages` dovrebbe tornare JSON auth (`401`) o JSON not-found (`404`) invece del 404 text/plain Vercel.
+
+---
+
 ## [FIXED] Web landing build fails on current App.tsx
 
 **Package:** `@monocode/web`

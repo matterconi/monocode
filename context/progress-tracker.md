@@ -800,6 +800,35 @@ In progress — scaffolding
 - `bunx --bun tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto, issue già tracciata.
 - `bun run check` fallisce ancora sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenze workspace/pg segnalate).
 
+## Completed (sessione corrente — CLI Clerk public defaults)
+
+- `/login` CLI non richiede più `CLERK_FRONTEND_API` e `CLERK_OAUTH_CLIENT_ID` nell'env locale: `apps/cli/src/lib/auth/config.ts` contiene i valori pubblici production Clerk come default, mantenendo gli env come override per dev/self-host.
+- `apps/cli/package.json` aggiornato a `@monocode-ai/cli@0.0.2` per preparare la release npm con il fix `/login`.
+- Root `package.json` corretto come JSON valido: aggiunta la virgola mancante dopo `scripts` e rimossa la virgola finale dopo `devDependencies`, risolvendo il crash `EJSONPARSE` di `npx` quando viene lanciato dalla root repo.
+- Decisione documentata: i due valori Clerk CLI sono config OAuth pubblica, mentre i secret Clerk restano solo server-side (`CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`) su Vercel/runtime server.
+- Verifica: `bunx --bun tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+- Build runtime CLI tentata dopo il fix: fallisce prima del codice auth su import opzionali native OpenTUI non presenti in `node_modules` (`@opentui/core-*-*`), quindi non valida né invalida la modifica `/login`.
+- `bun pm pack --dry-run` conferma che il tarball `monocode-ai-cli-0.0.2.tgz` includerebbe `src/lib/auth/config.ts` e 79 file totali; `npm view @monocode-ai/cli@0.0.2 version` conferma che la versione non è ancora pubblicata.
+- Publish npm: `bun publish --access public` e npm locale erano bloccati rispettivamente da auth/compatibilità Node 23; `pnpm` via `bunx` con config npm temporanea è riuscito a pubblicare `@monocode-ai/cli@0.0.2` su npm.
+- `bun pm view @monocode-ai/cli version` conferma `0.0.2` come latest pubblicata. Nessuna `.npmrc` temporanea è rimasta in `apps/cli/`.
+
+## Completed (sessione corrente — chat bootstrap JSON parse)
+
+- Revisionato il lavoro agent precedente: le modifiche riguardano solo default pubblici Clerk, versione `@monocode-ai/cli@0.0.2` e note context; non toccano il bootstrap chat.
+- Root cause riprodotta senza DB: `storedCodingMessagesSchema` falliva su messaggi persistiti con `model` legacy non più presente nel registry corrente, ad esempio `anthropic/claude-sonnet-4-6` dai seed/storico DB.
+- `storedCodingMessageSchema` ora accetta `model` solo se ancora valido e lo omette se legacy/ignoto, evitando di mostrare un modello falso e lasciando la UI senza riga modello per quei messaggi storici.
+- `useSessionChat` ora controlla `res.ok` prima di `res.json()` e mostra un toast `Session load failed` con il body errore server (`error`/`message`/text), invece di mascherare `401/404/500` come parse failure.
+- Pulizia DB non eseguita: la query locale Prisma fallisce con `ECONNREFUSED`, quindi il `DATABASE_URL` corrente non è raggiungibile da questo ambiente; inoltre cancellare dati confermerebbe solo il sintomo, non risolverebbe la compatibilità con messaggi legacy in produzione.
+- Verifica schema: payload legacy con `model: "anthropic/claude-sonnet-4-6"` ora passa `storedCodingMessagesSchema.safeParse()` e ritorna il messaggio senza `model`.
+- `bunx --bun tsc --noEmit -p packages/ai/tsconfig.json` passa; `bun run --cwd packages/ai build` passa e rigenera `dist/index.mjs`.
+- `bunx --bun tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+- Nota publish: la CLI npm `@monocode-ai/cli@0.0.2` dipende da `@monocode-ai/ai@^0.0.1`; per portare questa fix nella CLI pubblicata serve pubblicare `@monocode-ai/ai` corretto e poi una nuova patch CLI.
+- Pulizia DB eseguita sul database Prisma indicato dall'utente: cancellate solo le tabelle Monocode `Message` e `Session`, lasciando intatti eventuali altri dati condivisi nello stesso database. Conteggi: prima `41` sessioni / `167` messaggi, dopo `0` / `0`.
+- Dopo la pulizia DB, il crash persisteva nella CLI pubblicata: verifica produzione senza auth ha mostrato `GET /api/sessions/test_session/messages` con `404 text/plain` da Vercel (`The page could not be found`), mentre `GET /api/sessions` tornava JSON controllato. La nested route non raggiungeva Hono, quindi `res.json()` nella CLI pubblicata falliva su testo non JSON.
+- Aggiunta function Vercel esplicita `api/sessions/[sessionId]/messages.ts` che delega alla stessa app Hono e copre `GET`/`POST /api/sessions/:sessionId/messages` senza dipendere dal catch-all multi-segment in produzione.
+- Verifica API bundle: `bun build ./api/index.ts './api/[...route].ts' './api/sessions/[sessionId]/messages.ts' --target node --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-api-check` passa.
+- `bun run check` dopo la route esplicita non segnala il nuovo file e fallisce ancora solo sugli issue preesistenti già tracciati.
+
 ## Completed (sessione corrente — ai-resume-pdf KV migration)
 
 - Schema `ai_resume_resumes` aggiunto in `app/lib/schema.ts` con campi `id`, `userId`, `companyName`, `jobTitle`, `jobDescription`, `resumeFileId`, `imageFileId`, `feedback`, `createdAt`, `updatedAt`.

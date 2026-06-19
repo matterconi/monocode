@@ -34,9 +34,25 @@ function formatChatError(error: Error) {
   return error.message || "The provider failed before returning a response."
 }
 
+async function getResponseErrorMessage(res: Response) {
+  const text = await res.text()
+  if (!text) return `HTTP ${res.status}`
+
+  try {
+    const body = JSON.parse(text) as unknown
+    if (typeof body === "object" && body !== null && "error" in body) return JSON.stringify(body.error)
+    if (typeof body === "object" && body !== null && "message" in body && typeof body.message === "string") return body.message
+  } catch {
+    return text
+  }
+
+  return text
+}
+
 export function useSessionChat({ sessionId, initialPrompt }: UseSessionChatOptions) {
   const auth = useAuth()
   const toast = useToast()
+  const showToastError = toast.actions.error
   const authRef = useRef(auth)
   authRef.current = auth
 
@@ -130,6 +146,8 @@ export function useSessionChat({ sessionId, initialPrompt }: UseSessionChatOptio
         { param: { sessionId } },
         { headers: await getAuthHeaders(authRef.current) },
       )
+      if (!res.ok) throw new Error(`Failed to load session messages: ${await getResponseErrorMessage(res)}`)
+
       const dbMessages = storedCodingMessagesSchema.parse(await res.json())
       if (cancelled) return
 
@@ -145,12 +163,15 @@ export function useSessionChat({ sessionId, initialPrompt }: UseSessionChatOptio
       sendMessage({ text: initialPrompt }, { body: getChatRequestBody() })
     }
 
-    bootstrapSessionChat()
+    bootstrapSessionChat().catch((error) => {
+      if (cancelled) return
+      showToastError(formatChatError(error instanceof Error ? error : new Error(String(error))), { title: "Session load failed" })
+    })
 
     return () => {
       cancelled = true
     }
-  }, [initialPrompt, sendMessage, sessionId, setMessages])
+  }, [initialPrompt, sendMessage, sessionId, setMessages, showToastError])
 
   const messageModes: Record<string, ModeName> = {}
   const messageModels: Record<string, ModelId> = {}
