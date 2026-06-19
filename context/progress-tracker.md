@@ -1009,6 +1009,12 @@ In progress — scaffolding
 - Diagnosi install Vercel: il commit `51b64c1` contiene root `package.json`/`bun.lock` che risolvono `@monocode-ai/ai` come workspace, ma il rename del manifest `packages/ai/package.json` da `@monocode/ai` a `@monocode-ai/ai` era ancora nel worktree locale non committato. Vercel costruisce dal commit remoto, quindi Bun non trova nessun workspace con nome `@monocode-ai/ai` e fallisce prima del runtime.
 - Confermato che il grafo corretto deve restare workspace-based: root `package.json` mantiene `workspaces: ["apps/*", "packages/*"]`, root e `apps/server/package.json` dipendono da `@monocode-ai/ai` con `workspace:*`, e `packages/ai/package.json` deve chiamarsi esattamente `@monocode-ai/ai`.
 - `bun install --frozen-lockfile` eseguito dalla root reale `/Users/magnulemme/Desktop/Projects/Full Stack/Matcode`: passa e genera Prisma senza modifiche al lock. Nessuna modifica a `.env` o segreti.
+
+## Completed (sessione corrente — Vercel AI package runtime export)
+
+- Root cause Vercel identificata: `packages/ai/package.json` esponeva `main` e `exports["."]` a `src/index.ts`, quindi Node/Vercel risolveva `@monocode-ai/ai` verso TypeScript source invece di un entrypoint runtime JS.
+- Patch minima: `@monocode-ai/ai` ora ha script `build` che genera `dist/index.mjs`; `exports` usa la condition `bun` per mantenere il dev locale su `src/index.ts`, mentre `import`/`default` puntano a `dist/index.mjs` per Node/Vercel. `types` resta su `src/index.ts`.
+- `vercel.json` aggiorna solo la build production: esegue `bun run --cwd packages/ai build` prima di `bun run --cwd apps/web build`, senza modificare il flow locale CLI/server.
 - `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
 
 ## Completed (sessione corrente — Vercel API ESM extension fix)
@@ -1049,3 +1055,9 @@ In progress — scaffolding
 - Smoke CLI URL: default senza env -> `https://monocode-server.vercel.app/api/sessions`; `MONOCODE_SERVER_ENV=development` -> `http://localhost:3001/sessions`; `MONOCODE_SERVER_URL` override vince anche in development.
 - Smoke Vercel bundle: i bundle temporanei `api/*`/`apps/server/server.js` non contengono `MONOCODE_SERVER_ENV`, `MONOCODE_SERVER_URL`, `localhost:3001` o l'URL production della CLI, confermando che Vercel non dipende dalla logica dev/CLI.
 - `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — Vercel AI package runtime export)
+
+- Root cause Vercel identificata: `packages/ai/package.json` esponeva `main` e `exports["."]` a `src/index.ts`, quindi Node/Vercel risolveva `@monocode/ai` verso TypeScript source invece di un entrypoint runtime JS.
+- Patch minima: `@monocode/ai` ora ha script `build` che genera `dist/index.mjs`; `exports` usa la condition `bun` per mantenere il dev locale su `src/index.ts`, mentre `import`/`default` puntano a `dist/index.mjs` per Node/Vercel. `types` resta su `src/index.ts`.
+- `vercel.json` aggiorna solo la build production: esegue `bun run --cwd packages/ai build` prima di `bun run --cwd apps/web build`, senza modificare il flow locale CLI/server.

@@ -119,7 +119,7 @@ Monocode/
 - Vercel deploys from the repository root.
 - The repository root `package.json` declares `"type": "module"` so Vercel's generated `api/*.js` handlers are loaded as ESM. Do not remove it unless the API handlers are converted to an explicitly CommonJS-compatible deployment format.
 - The repository root `package.json` declares the runtime dependency graph used by `api/*.ts` handlers because Vercel builds and executes those functions from the root task boundary, not from `apps/server/package.json` alone.
-- `apps/web` is the public landing page. Vercel runs `bun run --cwd apps/web build` and serves `apps/web/dist`.
+- `apps/web` is the public landing page. Vercel builds the shared AI runtime package first with `bun run --cwd packages/ai build`, then runs `bun run --cwd apps/web build` and serves `apps/web/dist`.
 - The Hono server runs on Vercel through `api/index.ts` and `api/[...route].ts`, so production API routes are available under `/api/*` on the generated Vercel URL. Use standard catch-all `[...route]` instead of optional catch-all because Vercel function discovery is more reliable with the standard route file.
 - The Vercel project must define server runtime Environment Variables for `GROQ_API_KEY`, `DATABASE_URL`, `CLERK_SECRET_KEY`, and `CLERK_PUBLISHABLE_KEY`. The Clerk publishable key name is exactly `CLERK_PUBLISHABLE_KEY`; do not use `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for this Hono API because the server middleware reads the backend env name.
 - `apps/server/server.ts` exists only as a compatibility entrypoint if a Vercel project is accidentally created with Root Directory `apps/server` and Hono preset. It default-exports the Hono app but does not replace the Bun local entrypoint.
@@ -138,6 +138,7 @@ Monocode/
 - `packages/ai/src/tools/sandbox.ts` — local workspace boundary for CLI-side tools. It resolves paths against the directory where the tool process is running, accepts an optional `@` prefix from inline file references, and blocks path escape outside that workspace. `MONOCODE_WORKSPACE_ROOT` can explicitly override the process cwd for dev wrappers or future launchers.
 - `packages/ai/src/types.ts` — `CodingUIMessage` / `CodingUITools` for `useChat`.
 - `packages/ai/src/messages/schemas.ts` — shared chat request validation (`chatRequestSchema`), minimal `UIMessage` boundary validation (`uiMessageSchema`), persisted-message parsing (`storedCodingMessagesSchema`) for DB → CLI hydration, and `storedMessagePartsSchema` for validating UI message parts before JSON persistence.
+- `packages/ai/package.json` — package boundary exposes TypeScript source only through the `bun` condition for local Bun development, while Node/Vercel `import` and `default` resolve to `dist/index.mjs`. Do not point Node runtime exports at `src/index.ts`.
 
 Tool architecture intentionally avoids a central generated registry. Adding a tool requires updating the schema, definitions, executor, call union, and UI tool types explicitly. This controlled duplication is preferred for now over `typeof registry`, indexed-access generics, or casts.
 

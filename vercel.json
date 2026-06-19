@@ -1,5 +1,5 @@
 {
-  "buildCommand": "bun run --cwd apps/web build",
+  "buildCommand": "bun run --cwd packages/ai build && bun run --cwd apps/web build",
   "framework": "vite",
   "installCommand": "bun install --frozen-lockfile",
   "outputDirectory": "apps/web/dist"
