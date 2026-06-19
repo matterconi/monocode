@@ -118,6 +118,7 @@ Monocode/
 
 - Vercel deploys from the repository root.
 - The repository root `package.json` declares `"type": "module"` so Vercel's generated `api/*.js` handlers are loaded as ESM. Do not remove it unless the API handlers are converted to an explicitly CommonJS-compatible deployment format.
+- The repository root `package.json` declares the runtime dependency graph used by `api/*.ts` handlers because Vercel builds and executes those functions from the root task boundary, not from `apps/server/package.json` alone.
 - `apps/web` is the public landing page. Vercel runs `bun run --cwd apps/web build` and serves `apps/web/dist`.
 - The Hono server runs on Vercel through `api/index.ts` and `api/[...route].ts`, so production API routes are available under `/api/*` on the generated Vercel URL. Use standard catch-all `[...route]` instead of optional catch-all because Vercel function discovery is more reliable with the standard route file.
 - The Vercel project must define server runtime Environment Variables for `GROQ_API_KEY`, `DATABASE_URL`, `CLERK_SECRET_KEY`, and `CLERK_PUBLISHABLE_KEY`. The Clerk publishable key name is exactly `CLERK_PUBLISHABLE_KEY`; do not use `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` for this Hono API because the server middleware reads the backend env name.

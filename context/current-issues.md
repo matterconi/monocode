@@ -238,12 +238,12 @@
 
 **Symptom:** `GET https://monocode-server.vercel.app/api/sessions` and `GET https://monocode-server.vercel.app/api` return `500 FUNCTION_INVOCATION_FAILED` instead of a controlled `401`/JSON response for unauthenticated requests.
 
-**Observed production cause:** Vercel logs show Node failing before Hono/Clerk route handling: `/var/task/api/index.js` and `/var/task/api/[...route].js` contain ESM `import` syntax but are loaded as CommonJS, producing `SyntaxError: Cannot use import statement outside a module`.
+**Observed production cause:** The initial Vercel logs showed Node failing before Hono/Clerk route handling because `/var/task/api/index.js` and `/var/task/api/[...route].js` contained ESM `import` syntax but were loaded as CommonJS. After adding root `"type": "module"`, production advanced to a new loader failure: `ERR_MODULE_NOT_FOUND: Cannot find package 'hono' imported from /var/task/api/[...route].js`, indicating the root Vercel function task could not resolve runtime dependencies used by API handlers.
 
 **Previous suspected cause:** The live function might also fail inside Clerk authentication if env vars are missing. Local reproduction with an empty `CLERK_PUBLISHABLE_KEY` throws `Publishable key is missing` from `@clerk/backend.authenticateRequest()`, but the current production logs show the ESM/CJS loader crash happens earlier.
 
 **Mitigation added:** The Clerk middleware now wraps `authenticateRequest()` and, when `AUTH_DEBUG=1`, logs method/path, Authorization presence/scheme, safe env presence booleans, and error name/message without printing tokens or secret values.
 
-**Fix attempted:** Root `package.json` now declares `"type": "module"` so Vercel/Node should load generated `api/*.js` handlers as ESM.
+**Fix attempted:** Root `package.json` now declares `"type": "module"` so Vercel/Node should load generated `api/*.js` handlers as ESM. Root `package.json` also declares the API runtime dependency graph so Vercel installs packages visible to `/var/task/api/*.js`; `api/index.ts` and `api/[...route].ts` no longer import `hono/vercel` directly and instead delegate requests to `app.fetch()` after stripping the `/api` prefix.
 
-**Fix still needed:** Redeploy production and verify `/api` and `/api/sessions`. Expected next state is either controlled `401` for unauthenticated requests or safe `AUTH_DEBUG=1` Clerk diagnostics if env configuration is still wrong.
+**Fix still needed:** Redeploy production and verify `/api` and `/api/sessions`. Expected next state is either controlled `401` for unauthenticated requests or safe `AUTH_DEBUG=1` Clerk diagnostics if env configuration is still wrong. Local smoke tests now reach Hono without loader crash, but local Clerk env still returns controlled `500 {"error":"Authentication failed"}` rather than proving the production `401` path.

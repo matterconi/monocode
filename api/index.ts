@@ -1,12 +1,16 @@
 // fallow-ignore-next-line unused-files -- Vercel discovers API functions by filesystem convention.
-import { handle } from "hono/vercel"
-import { Hono } from "hono"
 import { app } from "../apps/server/src/app"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
 
-const api = new Hono().route("/api", app)
+function handleRequest(request: Request) {
+  const url = new URL(request.url)
+  if (url.pathname === "/api") url.pathname = "/"
+  else if (url.pathname.startsWith("/api/")) url.pathname = url.pathname.slice(4)
 
-export const GET = handle(api)
-export const POST = handle(api)
+  return app.fetch(new Request(url.toString(), request))
+}
+
+export const GET = handleRequest
+export const POST = handleRequest
