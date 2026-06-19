@@ -1010,3 +1010,12 @@ In progress — scaffolding
 - Confermato che il grafo corretto deve restare workspace-based: root `package.json` mantiene `workspaces: ["apps/*", "packages/*"]`, root e `apps/server/package.json` dipendono da `@monocode-ai/ai` con `workspace:*`, e `packages/ai/package.json` deve chiamarsi esattamente `@monocode-ai/ai`.
 - `bun install --frozen-lockfile` eseguito dalla root reale `/Users/magnulemme/Desktop/Projects/Full Stack/Matcode`: passa e genera Prisma senza modifiche al lock. Nessuna modifica a `.env` o segreti.
 - `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — Vercel API ESM extension fix)
+
+- Root cause Vercel identificata: il builder Node ha prodotto `/var/task/api/[...route].js` come ESM non completamente bundleato e ha preservato l'import relativo extensionless verso `../apps/server/src/app`; Node ESM non risolve automaticamente `.js`, quindi cercava letteralmente `/var/task/apps/server/src/app`.
+- Patch minima: gli import runtime del boundary Vercel e della catena server eseguita da Vercel usano ora specifier `.js` (`../apps/server/src/app.js`, `./src/app.js`, `./middleware/clerk-auth.js`, `./routes/sessions.js`, `../ai/model-resolver.js`). Gli import type-only restano extensionless perché vengono rimossi in transpile.
+- Verifica install su `main`: `bun install --frozen-lockfile` passa e genera Prisma senza modifiche a lockfile o `.env`.
+- Verifica build: `bun build ./api/index.ts "./api/[...route].ts" --target node` richiede `--outdir` con Bun 1.3.13 quando ci sono più entrypoint; con outdir temporaneo passa e produce bundle self-contained.
+- Smoke ESM non-bundled: transpile con esbuild di `api/*` e della catena `apps/server/src` conferma che tutti gli import relativi runtime emessi hanno estensione `.js`.
+- `bun run check` rieseguito: fallisce ancora solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).

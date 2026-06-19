@@ -1,7 +1,7 @@
 import { Hono } from "hono"
 import { logger } from "hono/logger"
-import { clerkAuthMiddleware, type ClerkAuthEnv } from "./middleware/clerk-auth"
-import { sessions } from "./routes/sessions"
+import { clerkAuthMiddleware, type ClerkAuthEnv } from "./middleware/clerk-auth.js"
+import { sessions } from "./routes/sessions.js"
 
 export const app = new Hono<ClerkAuthEnv>()
   .use(logger())

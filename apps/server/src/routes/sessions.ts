@@ -9,7 +9,7 @@ import {
   defaultTitleModelId,
   storedMessagePartsSchema,
 } from "@monocode-ai/ai"
-import { resolveLanguageModelRuntime, UnsupportedModelSettingError } from "../ai/model-resolver"
+import { resolveLanguageModelRuntime, UnsupportedModelSettingError } from "../ai/model-resolver.js"
 import type { ClerkAuth, ClerkAuthEnv } from "../middleware/clerk-auth"
 
 const createSessionSchema = z.object({ title: z.string().trim().min(1).max(80).optional() })

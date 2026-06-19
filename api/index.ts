@@ -1,5 +1,5 @@
 // fallow-ignore-next-line unused-files -- Vercel discovers API functions by filesystem convention.
-import { app } from "../apps/server/src/app"
+import { app } from "../apps/server/src/app.js"
 
 export const runtime = "nodejs"
 export const maxDuration = 60

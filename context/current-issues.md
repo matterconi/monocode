@@ -260,3 +260,16 @@
 **Fix attempted:** Root `package.json` now declares `"type": "module"` so Vercel/Node should load generated `api/*.js` handlers as ESM. Root `package.json` also declares the API runtime dependency graph so Vercel installs packages visible to `/var/task/api/*.js`; `api/index.ts` and `api/[...route].ts` no longer import `hono/vercel` directly and instead delegate requests to `app.fetch()` after stripping the `/api` prefix.
 
 **Fix still needed:** Redeploy production and verify `/api` and `/api/sessions`. Expected next state is either controlled `401` for unauthenticated requests or safe `AUTH_DEBUG=1` Clerk diagnostics if env configuration is still wrong. Local smoke tests now reach Hono without loader crash, but local Clerk env still returns controlled `500 {"error":"Authentication failed"}` rather than proving the production `401` path.
+
+---
+
+## [FIXED] Vercel API function cannot resolve server app import
+
+**Package:** workspace root / Vercel API functions
+**Files:** `api/index.ts`, `api/[...route].ts`, `apps/server/server.ts`, `apps/server/src/app.ts`, `apps/server/src/routes/sessions.ts`
+
+**Symptom:** Vercel `GET /api/sessions` failed with `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/apps/server/src/app' imported from /var/task/api/[...route].js`.
+
+**Cause:** Vercel's Node function output was ESM and preserved the relative runtime import from the API handler. The specifier was extensionless (`../apps/server/src/app`), so Node ESM tried the exact path `/var/task/apps/server/src/app` and did not append `.js`. Bun and TypeScript `moduleResolution: "bundler"` accept this locally, but the Vercel runtime does not.
+
+**Fix:** Runtime relative imports in the Vercel API path now use `.js` specifiers, including the next server imports that Node resolves after loading `app.js`. Type-only imports were left unchanged because they are erased before runtime.
