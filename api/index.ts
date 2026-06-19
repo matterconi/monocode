@@ -2,9 +2,11 @@
 import * as serverApp from "../apps/server/src/app.js"
 
 const appModule = serverApp as unknown as { app?: typeof serverApp.app; default?: typeof serverApp.app }
-const app = appModule.app ?? appModule.default
+const resolvedApp = appModule.app ?? appModule.default
 
-if (!app) throw new Error("Unable to resolve Hono app export")
+if (!resolvedApp) throw new Error("Unable to resolve Hono app export")
+
+const app = resolvedApp
 
 export const runtime = "nodejs"
 export const maxDuration = 60

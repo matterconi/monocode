@@ -233,13 +233,15 @@
 ## [FIXED] Vercel API function resolves `@monocode-ai/ai` to TypeScript source
 
 **Package:** `@monocode-ai/ai` / Vercel API functions
-**Files:** `packages/ai/package.json`, `vercel.json`
+**Files:** `packages/ai/package.json`, `package.json`, `vercel.json`
 
 **Symptom:** Vercel production failed while importing `apps/server/src/routes/sessions.js` with `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/apps/server/node_modules/@monocode-ai/ai/src/index.ts'`.
 
-**Cause:** The AI package boundary exposed `main` and `exports["."]` directly as `src/index.ts`. Bun local development can execute TypeScript source, but Vercel's Node runtime follows package exports and needs a JavaScript runtime entrypoint.
+**Cause:** The AI package boundary initially exposed `main` and `exports["."]` directly as `src/index.ts`. After the export fix, Vercel still reproduced the same runtime path because it performs a second dependency install for function outputs after `buildCommand`; the root `postinstall` only built `@monocode/db`, so `@monocode-ai/ai`'s JS runtime entry was not guaranteed in the function task. The published npm `@monocode-ai/ai@0.0.1` also still points at `src/index.ts`, so any fallback to registry installs would reproduce the same failure.
 
-**Fix:** `@monocode-ai/ai` now builds `dist/index.mjs`; Node/Vercel `import` and `default` exports point to that JS file, while the `bun` condition keeps local Bun development resolving to `src/index.ts`. Vercel's build command runs the AI package build before the web landing build.
+**Fix:** `@monocode-ai/ai` now builds `dist/index.mjs`; Node/Vercel `import` and `default` exports point to that JS file, while the `bun` condition keeps local Bun development resolving to `src/index.ts`. The root `postinstall` now also runs `bun run --cwd packages/ai build` before DB generation/build, so Vercel's function dependency install creates the AI runtime JS before packaging.
+
+**Operational note:** Redeploy Vercel without build cache after this fix. If logs ever show registry installation of `@monocode-ai/ai@0.0.1` instead of workspace linking, publish a corrected `@monocode-ai/ai@0.0.2` or keep the API deployment strictly workspace-root based.
 
 ---
 

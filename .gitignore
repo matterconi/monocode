@@ -6,5 +6,6 @@ node_modules/
 .env*.local
 .firecrawl/
 apps/web/dist/
+packages/ai/dist/
 packages/db/dist/
 packages/db/generated/

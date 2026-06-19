@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "bun run --cwd packages/db generate && bun run --cwd packages/db build",
+    "postinstall": "bun run --cwd packages/ai build && bun run --cwd packages/db generate && bun run --cwd packages/db build",
     "server": "bun run --filter @monocode/server dev",
     "cli": "MONOCODE_WORKSPACE_ROOT=\"$PWD\" bun run --cwd apps/cli dev",
     "web": "bun run --cwd apps/web dev",
