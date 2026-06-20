@@ -1117,3 +1117,9 @@ In progress — scaffolding
 
 - Audit pre-merge del branch `vercel-ai-runtime-export`: worktree pulito, branch avanti rispetto a `main`, diff limitato a fix Vercel runtime/export, URL CLI production/local, hardening bootstrap chat, limite messaggi e aggiornamenti context correlati.
 - Rimossi marker di conflitto residui da `context/current-issues.md`, mantenendo la nota completa già presente su `@monocode-ai/ai` runtime export e le sezioni Vercel/DB valide.
+
+## Completed (sessione corrente — merge main)
+
+- `main` aggiornato con fast-forward da `vercel-ai-runtime-export` dopo stash delle modifiche locali non committate presenti nel worktree principale (`pre-merge main dirty changes before vercel-ai-runtime-export`).
+- Verifiche post-merge: nessun marker di conflitto nei markdown, build `packages/ai` e `apps/web` passata, bundle Vercel-like API/server passato, typecheck server passato con `bunx --bun tsc --noEmit -p apps/server/tsconfig.json`.
+- `bun run check` e typecheck CLI restano falliti solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
