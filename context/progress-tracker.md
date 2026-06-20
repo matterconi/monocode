@@ -1124,3 +1124,7 @@ In progress — scaffolding
 - Fix docs Vercel aggiunto: `vercel.json` ora rewrita `/docs` e `/docs/` verso `index.html`, e `apps/web/src/App.tsx` normalizza il pathname con trailing slash prima di scegliere `DocsPage`.
 - La docs resta una SPA route interna della landing Vite, quindi l'accesso diretto a `/docs` su Vercel non cade più nel 404 text/plain della piattaforma.
 - Verifiche: `bun run --cwd apps/web build` passa; `bun run check` continua a fallire solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, `packages/db/prisma.config.ts`, `packages/db/scripts/verify.ts`, `packages/shared/src/index.ts`, `pg` inutilizzata).
+
+## Completed (sessione corrente — README)
+
+- `README.md` aggiunto in inglese con overview, features, structure, requirements, quick start, env vars, scripts, architecture, deployment, status e contributing notes per presentare Monocode su GitHub.
