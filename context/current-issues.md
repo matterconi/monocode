@@ -362,7 +362,6 @@
 
 ---
 
-<<<<<<< HEAD
 ## [FIXED] Vercel API function cannot see named `app` export
 
 **Package:** workspace root / Vercel API functions
@@ -400,15 +399,3 @@
 **Cause:** `apps/server/src/routes/sessions.ts` correctly imports `@monocode/db` as a workspace package, but `packages/db/package.json` exported `".": "./src/index.ts"`. Vercel preserved the bare package import in the emitted server route, then Node resolved the workspace package export inside `apps/server/node_modules` and tried to load TypeScript source from `node_modules` at runtime.
 
 **Fix:** `@monocode/db` now keeps TypeScript source as the `types` condition and exposes `./dist/index.js` as the runtime `import` entry. Root `postinstall` runs Prisma generate and then `bun run --cwd packages/db build`, so Vercel's `bun install --frozen-lockfile` creates the JS runtime entry before functions execute.
-=======
-## [FIXED] Vercel API function resolves `@monocode/ai` to TypeScript source
-
-**Package:** `@monocode/ai` / Vercel API functions
-**Files:** `packages/ai/package.json`, `vercel.json`
-
-**Symptom:** Vercel production failed while importing `apps/server/src/routes/sessions.js` with `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/apps/server/node_modules/@monocode-ai/ai/src/index.ts'`.
-
-**Cause:** The AI package boundary exposed `main` and `exports["."]` directly as `src/index.ts`. Bun local development can execute TypeScript source, but Vercel's Node runtime follows package exports and needs a JavaScript runtime entrypoint.
-
-**Fix:** `@monocode/ai` now builds `dist/index.mjs`; Node/Vercel `import` and `default` exports point to that JS file, while the `bun` condition keeps local Bun development resolving to `src/index.ts`. Vercel's build command runs the AI package build before the web landing build.
->>>>>>> 0a4e417 (fix: make ai package resolve to runtime JS on vercel)

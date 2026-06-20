@@ -1112,3 +1112,8 @@ In progress — scaffolding
 - `@monocode/db` allineato alla shape condition-based dell'AI package: `bun` risolve a `src/index.ts` per dev locale, mentre Node/Vercel `import`/`default` restano su `dist/index.js`. Questo ripristina anche il bundle API Vercel-like con `bun build --target node`.
 - Verifiche: `DATABASE_URL` fittizio `bun run postinstall` passa e genera `packages/ai/dist/index.mjs` + `packages/db/dist/index.js`; Node da `apps/server` risolve `@monocode-ai/ai` a `packages/ai/dist/index.mjs`; Bun locale risolve `@monocode-ai/ai` a `packages/ai/src/index.ts`; Bun locale risolve `@monocode/db` a `packages/db/src/index.ts` e Node a `packages/db/dist/index.js`; `bun build ./api/index.ts "./api/[...route].ts" ./apps/server/server.ts --target node --outdir <temp>` passa; typecheck mirato degli handler API passa.
 - `bun install --frozen-lockfile` locale resta bloccato dal preinstall Prisma/Node già tracciato prima di arrivare al `postinstall`; nei log Vercel `bun install --frozen-lockfile` passa. `bun run check` resta fallito solo sugli issue Fallow preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — branch merge prep)
+
+- Audit pre-merge del branch `vercel-ai-runtime-export`: worktree pulito, branch avanti rispetto a `main`, diff limitato a fix Vercel runtime/export, URL CLI production/local, hardening bootstrap chat, limite messaggi e aggiornamenti context correlati.
+- Rimossi marker di conflitto residui da `context/current-issues.md`, mantenendo la nota completa già presente su `@monocode-ai/ai` runtime export e le sezioni Vercel/DB valide.
