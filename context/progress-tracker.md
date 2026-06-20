@@ -33,6 +33,7 @@ In progress — scaffolding
 ## Completed (sessione corrente)
 
 - Chat screen aggiunta (`apps/cli/src/screens/chat-screen.tsx`) con `useCompletion` da `@ai-sdk/react`
+- Fix keyboard CLI: rimosso il global route shortcut in `RootLayout` che intercettava `1` e navigava a `/`, chiudendo la chat quando era aperta
 - Route `/chat` registrata in `router.tsx` (navigazione programmatica da HomeScreen)
 - Endpoint `GET /ai` — `generateText`, risposta JSON completa
 - Endpoint `GET /llm-test2` — `streamText` + `toTextStreamResponse()`, plain text stream
@@ -1123,3 +1124,13 @@ In progress — scaffolding
 - `main` aggiornato con fast-forward da `vercel-ai-runtime-export` dopo stash delle modifiche locali non committate presenti nel worktree principale (`pre-merge main dirty changes before vercel-ai-runtime-export`).
 - Verifiche post-merge: nessun marker di conflitto nei markdown, build `packages/ai` e `apps/web` passata, bundle Vercel-like API/server passato, typecheck server passato con `bunx --bun tsc --noEmit -p apps/server/tsconfig.json`.
 - `bun run check` e typecheck CLI restano falliti solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+
+## Completed (sessione corrente — docs route Vercel)
+
+- Fix docs Vercel aggiunto: `vercel.json` ora rewrita `/docs` e `/docs/` verso `index.html`, e `apps/web/src/App.tsx` normalizza il pathname con trailing slash prima di scegliere `DocsPage`.
+- La docs resta una SPA route interna della landing Vite, quindi l'accesso diretto a `/docs` su Vercel non cade più nel 404 text/plain della piattaforma.
+- Verifiche: `bun run --cwd apps/web build` passa; `bun run check` continua a fallire solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, `packages/db/prisma.config.ts`, `packages/db/scripts/verify.ts`, `packages/shared/src/index.ts`, `pg` inutilizzata).
+
+## Completed (sessione corrente — README)
+
+- `README.md` aggiunto in inglese con overview, features, structure, requirements, quick start, env vars, scripts, architecture, deployment, status e contributing notes per presentare Monocode su GitHub.

@@ -521,7 +521,7 @@ function DocsPage() {
 }
 
 export function App() {
-  if (window.location.pathname === "/docs") {
+  if (window.location.pathname.replace(/\/$/, "") === "/docs") {
     return <DocsPage />;
   }
 
