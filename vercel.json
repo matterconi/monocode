@@ -2,5 +2,9 @@
   "buildCommand": "bun run --cwd packages/ai build && bun run --cwd apps/web build",
   "framework": "vite",
   "installCommand": "bun install --frozen-lockfile",
-  "outputDirectory": "apps/web/dist"
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    { "source": "/docs", "destination": "/index.html" },
+    { "source": "/docs/", "destination": "/index.html" }
+  ]
 }

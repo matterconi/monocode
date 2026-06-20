@@ -33,6 +33,7 @@ In progress — scaffolding
 ## Completed (sessione corrente)
 
 - Chat screen aggiunta (`apps/cli/src/screens/chat-screen.tsx`) con `useCompletion` da `@ai-sdk/react`
+- Fix keyboard CLI: rimosso il global route shortcut in `RootLayout` che intercettava `1` e navigava a `/`, chiudendo la chat quando era aperta
 - Route `/chat` registrata in `router.tsx` (navigazione programmatica da HomeScreen)
 - Endpoint `GET /ai` — `generateText`, risposta JSON completa
 - Endpoint `GET /llm-test2` — `streamText` + `toTextStreamResponse()`, plain text stream
@@ -1117,3 +1118,9 @@ In progress — scaffolding
 
 - Audit pre-merge del branch `vercel-ai-runtime-export`: worktree pulito, branch avanti rispetto a `main`, diff limitato a fix Vercel runtime/export, URL CLI production/local, hardening bootstrap chat, limite messaggi e aggiornamenti context correlati.
 - Rimossi marker di conflitto residui da `context/current-issues.md`, mantenendo la nota completa già presente su `@monocode-ai/ai` runtime export e le sezioni Vercel/DB valide.
+
+## Completed (sessione corrente — docs route Vercel)
+
+- Fix docs Vercel aggiunto: `vercel.json` ora rewrita `/docs` e `/docs/` verso `index.html`, e `apps/web/src/App.tsx` normalizza il pathname con trailing slash prima di scegliere `DocsPage`.
+- La docs resta una SPA route interna della landing Vite, quindi l'accesso diretto a `/docs` su Vercel non cade più nel 404 text/plain della piattaforma.
+- Verifiche: `bun run --cwd apps/web build` passa; `bun run check` continua a fallire solo sugli issue preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, `packages/db/prisma.config.ts`, `packages/db/scripts/verify.ts`, `packages/shared/src/index.ts`, `pg` inutilizzata).
