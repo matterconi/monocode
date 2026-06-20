@@ -829,6 +829,16 @@ In progress — scaffolding
 - Verifica API bundle: `bun build ./api/index.ts './api/[...route].ts' './api/sessions/[sessionId]/messages.ts' --target node --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-api-check` passa.
 - `bun run check` dopo la route esplicita non segnala il nuovo file e fallisce ancora solo sugli issue preesistenti già tracciati.
 
+## Completed (sessione corrente — chat spam guardrail)
+
+- Guardrail server aggiunto su `POST /sessions/:sessionId/messages`: ogni utente autenticato può inviare al massimo `10` messaggi user complessivi, contati tramite `db.message.count({ where: { role: "user", session: { userId } } })`.
+- Superato il limite, la route risponde `429` con JSON `{ error: "Message limit reached (10 per user)." }`, così la CLI può mostrare un errore leggibile invece di streamare la request.
+- Verifica: `bunx --bun tsc --noEmit -p apps/server/tsconfig.json` passa; `bun run check` resta fermo ai problemi preesistenti già tracciati (`apps/cli/src/scripts/test-chat.ts`, `foo.ts`, script/config DB/shared e dipendenza `pg`).
+- Verifica server isolata senza DB reale: Hono app con auth e `db.message.count()` mockati a `10` risponde `429 application/json` con `{ error: "Message limit reached (10 per user)." }` su `POST /sessions/:sessionId/messages`.
+- UX CLI aggiornata: `useSessionChat.formatChatError()` e `getResponseErrorMessage()` ora mostrano direttamente `error` stringa dai body JSON, evitando le virgolette extra sul toast del `429`.
+- Route Vercel nested verificata in produzione: `GET` e `POST https://monocode-server.vercel.app/api/sessions/test_session/messages` senza auth rispondono `401 application/json` con `{"error":"Unauthorized"}`, quindi la function esplicita è deployata e raggiunge Hono invece del vecchio `404 text/plain` Vercel.
+- Verifiche rieseguite: `bunx --bun tsc --noEmit -p apps/server/tsconfig.json` passa; `bun build ./api/index.ts './api/[...route].ts' './api/sessions/[sessionId]/messages.ts' --target node --outdir /var/folders/zz/9h24nvs956g9sk19vx40g2yw0000gn/T/opencode/monocode-api-check` passa; `bunx --bun tsc --noEmit -p apps/cli/tsconfig.json` fallisce ancora solo su `apps/cli/src/scripts/test-chat.ts` obsoleto; `bun run check` fallisce ancora solo sugli issue preesistenti già tracciati.
+
 ## Completed (sessione corrente — ai-resume-pdf KV migration)
 
 - Schema `ai_resume_resumes` aggiunto in `app/lib/schema.ts` con campi `id`, `userId`, `companyName`, `jobTitle`, `jobDescription`, `resumeFileId`, `imageFileId`, `feedback`, `createdAt`, `updatedAt`.

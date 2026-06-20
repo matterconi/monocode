@@ -25,7 +25,9 @@ type UseSessionChatOptions = {
 function formatChatError(error: Error) {
   try {
     const parsed = JSON.parse(error.message) as unknown
-    if (typeof parsed === "object" && parsed !== null && "error" in parsed) return JSON.stringify(parsed.error)
+    if (typeof parsed === "object" && parsed !== null && "error" in parsed) {
+      return typeof parsed.error === "string" ? parsed.error : JSON.stringify(parsed.error)
+    }
     if (typeof parsed === "object" && parsed !== null && "message" in parsed && typeof parsed.message === "string") return parsed.message
   } catch {
     // Provider and gateway stream errors usually arrive as plain text.
@@ -40,7 +42,9 @@ async function getResponseErrorMessage(res: Response) {
 
   try {
     const body = JSON.parse(text) as unknown
-    if (typeof body === "object" && body !== null && "error" in body) return JSON.stringify(body.error)
+    if (typeof body === "object" && body !== null && "error" in body) {
+      return typeof body.error === "string" ? body.error : JSON.stringify(body.error)
+    }
     if (typeof body === "object" && body !== null && "message" in body && typeof body.message === "string") return body.message
   } catch {
     return text

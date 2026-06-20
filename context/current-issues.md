@@ -244,6 +244,21 @@
 
 **Operational note:** Serve redeploy Vercel per rendere disponibile la route. Dopo il deploy, una richiesta non autenticata a `/api/sessions/test_session/messages` dovrebbe tornare JSON auth (`401`) o JSON not-found (`404`) invece del 404 text/plain Vercel.
 
+**Verification:** Redeploy verificato: `GET` e `POST https://monocode-server.vercel.app/api/sessions/test_session/messages` senza auth tornano `401 application/json` con `{"error":"Unauthorized"}`.
+
+---
+
+## [FIXED] CLI shows quoted JSON error strings
+
+**Package:** `@monocode-ai/cli`
+**File:** `apps/cli/src/hooks/use-session-chat.ts`
+
+**Symptom:** Gli errori HTTP JSON con shape `{ error: "..." }`, incluso il nuovo `429` del limite messaggi, venivano mostrati nel toast con virgolette extra perché `formatChatError()` faceva `JSON.stringify(parsed.error)` anche quando `error` era già una stringa.
+
+**Cause:** `DefaultChatTransport` lancia `new Error(await response.text())` per risposte non-2xx; la CLI parsava correttamente il JSON, ma serializzava di nuovo il campo `error` invece di restituirlo come testo.
+
+**Fix:** `formatChatError()` e `getResponseErrorMessage()` ora restituiscono direttamente `error` quando è stringa, usando `JSON.stringify()` solo per errori strutturati.
+
 ---
 
 ## [FIXED] Web landing build fails on current App.tsx

@@ -13,6 +13,7 @@ import { resolveLanguageModelRuntime, UnsupportedModelSettingError } from "../ai
 import type { ClerkAuth, ClerkAuthEnv } from "../middleware/clerk-auth"
 
 const createSessionSchema = z.object({ title: z.string().trim().min(1).max(80).optional() })
+const maxUserMessagesPerUser = 10
 
 const sessionSelect = {
   createdAt: true,
@@ -95,6 +96,16 @@ export const sessions = new Hono<ClerkAuthEnv>()
       const { messages, mode, model, modelSettings } = c.req.valid("json")
       const session = await db.session.findFirst({ where: { id: sessionId, userId }, select: { id: true } })
       if (!session) return c.json({ message: "Not Found" }, 404)
+
+      const userMessageCount = await db.message.count({
+        where: {
+          role: "user",
+          session: { userId },
+        },
+      })
+      if (userMessageCount >= maxUserMessagesPerUser) {
+        return c.json({ error: `Message limit reached (${maxUserMessagesPerUser} per user).` }, 429)
+      }
 
       const lastUserMsg = [...messages].reverse().find((m) => m.role === "user")
       let titlePromptText: string | undefined
